@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>השלמה אוטומטית לבנקים ישראלים</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/i18n/he.min.js"></script>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+
+
+<div class="container">
+  <h2 class="text-right">השלמה אוטומטית לבנקים ישראלים</h2>
+  <form>
+    <div class="row">
+      <div class="col-lg-4 col-md-4 col-sm-6 mb-3">
+        <label for="bankNumber" class="form-label">מספר בנק:</label>
+        <select class="form-control select2-hidden-accessible" id="bankNumber" style="width: 100%;" data-select2-id="bankNumber" tabindex="-1" aria-hidden="true">
+          <!-- Bank options will be populated by JavaScript -->
+        </select>
+      </div>
+      <div class="col-lg-4 col-md-4 col-sm-6 mb-3">
+        <label for="departmentNumber" class="form-label">מספר מחלקה:</label>
+        <select class="form-control select2-hidden-accessible" id="departmentNumber" style="width: 100%;" disabled="" data-select2-id="departmentNumber" tabindex="-1" aria-hidden="true">
+          <!-- Department options will be populated by JavaScript -->
+        </select>
+      </div>
+      <div class="col-lg-4 col-md-4 col-sm-6 mb-3">
+        <label for="accountNumber" class="form-label">מספר חשבון:</label>
+        <input type="text" class="form-control" id="accountNumber" placeholder="הכנס מספר חשבון" maxlength="30" disabled="">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-4 col-md-4 col-sm-6 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">שלח</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script src="js/bundle.js"></script>
+</body>
+
+</html>
