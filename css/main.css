@@ -1,3 +1,7 @@
 .is-invalid {
   border-color: #dc3545 !important;
 }
+
+.bi {
+  vertical-align: text-bottom;
+}
