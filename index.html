@@ -5,11 +5,83 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>השלמה אוטומטית לבנקים ישראלים</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/i18n/he.min.js"></script>
+
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/bootstrap.min.css">
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/style.css">
+
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/line-icons.css">
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/custom-sky-forms.css">
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/owl.carousel.css">
+  <!--[if lt IE 9]>
+  <link rel="stylesheet" href="/assets/plugins/sky-forms/version-2.0.1/css/sky-forms-ie8.css">
+  <![endif]-->
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/default.css">
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/dark.css" id="style_color">
+
+  <link rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css"
+        href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/bootstrap-clockpicker.min.css">
+  <link type="text/css" rel="stylesheet" href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/Styles.css">
+  <link href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/normalize.css" rel="stylesheet" type="text/css">
+  <link href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/webflow.css" rel="stylesheet" type="text/css">
+  <link href="./הגשת החזר אונליין - טופס תביעה - tripguaranty_files/tripguaranty.webflow.css" rel="stylesheet"
+        type="text/css">
+  <style>
+    .footer-v1 img {
+      width: initial !important;
+    }
+
+    .footerTitle {
+      line-height: 1.6;
+    }
+
+    .accessibilityContainer img {
+      width: initial !important;
+    }
+
+    .bid_info_list li {
+      color: #e6863b;
+    }
+
+    .input-group-addon {
+      border: 0;
+    }
+
+    .noSidepadding h1 {
+      margin: 0;
+      line-height: 35px;
+    }
+
+    #maidthumb2 img {
+      width: initial;
+    }
+
+    .resetFile, .resetFile:hover {
+      visibility: hidden;
+      font-size: 14px;
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .radioStyle {
+      -webkit-appearance: radio; /* Chrome, Safari, Opera */
+      -moz-appearance: radio; /* Firefox */
+      -ms-appearance: radio; /* not currently supported */
+    }
+
+  </style>
   <link rel="stylesheet" href="css/main.css">
 </head>
 
@@ -19,33 +91,97 @@
 <div class="container">
   <h2 class="text-right">השלמה אוטומטית לבנקים ישראלים</h2>
   <form>
-    <div class="row">
-      <div class="col-lg-4 col-md-4 col-sm-6 mb-3">
-        <label for="bankNumber" class="form-label">מספר בנק:</label>
-        <select class="form-control select2-hidden-accessible" id="bankNumber" style="width: 100%;" data-select2-id="bankNumber" tabindex="-1" aria-hidden="true">
-          <!-- Bank options will be populated by JavaScript -->
-        </select>
-      </div>
-      <div class="col-lg-4 col-md-4 col-sm-6 mb-3">
-        <label for="departmentNumber" class="form-label">מספר מחלקה:</label>
-        <select class="form-control select2-hidden-accessible" id="departmentNumber" style="width: 100%;" disabled="" data-select2-id="departmentNumber" tabindex="-1" aria-hidden="true">
-          <!-- Department options will be populated by JavaScript -->
-        </select>
-      </div>
-      <div class="col-lg-4 col-md-4 col-sm-6 mb-3">
-        <label for="accountNumber" class="form-label">מספר חשבון:</label>
-        <input type="text" class="form-control" id="accountNumber" placeholder="הכנס מספר חשבון" maxlength="30" disabled="">
+
+
+    <div class="bid_section details">
+      <h3 class="bid_details_title">פרטי חשבון בנק</h3>
+      <div class="form_section details fly hidden bank-filling-details">
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group">
+            <div class="form_label_group"><label class="feld_star">*</label><label for="dynamic_bankNumber">שם
+              בנק</label>
+            </div>
+          </div>
+          <select class="form_field w-input select2-hidden-accessible" id="dynamic_bankNumber" style="width: 100%;"
+                  data-select2-id="bankNumber" tabindex="-1" aria-hidden="true">
+            <!-- Bank options will be populated by JavaScript -->
+          </select>
+        </div>
+
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group">
+            <div class="form_label_group"><label class="feld_star">*</label><label for="dynamic_departmentNumber">מספר
+              סניף</label></div>
+          </div>
+          <select class="form_field w-input select2-hidden-accessible" id="dynamic_departmentNumber"
+                  style="width: 100%;"
+                  disabled="" data-select2-id="departmentNumber" tabindex="-1" aria-hidden="true">
+            <!-- Department options will be populated by JavaScript -->
+          </select>
+        </div>
+
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group">
+            <div class="form_label_group"><label class="feld_star">*</label><label for="dynamic_accountNumber">מספר
+              חשבון</label>
+            </div>
+          </div>
+          <input type="number" class="form_field w-input" id="dynamic_accountNumber" placeholder="הכנס מספר חשבון"
+                 maxlength="30"
+                 disabled="">
+        </div>
+
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group"><label class="feld_star">*</label><label>שם בעל החשבון</label></div>
+          <input type="text" id="dynamic_bankAccountName" minlength="1" maxlength="50" required=""
+                 class="form_field w-input"></div>
+
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group">
+            <label class="feld_star">*</label>
+            <label for="dynamic_accountNumber">ת"ז בעל החשבון:</label>
+          </div>
+          <input type="number" class="form_field w-input" id="dynamic_israelIdNumber" placeholder="הכנס תז"
+                 maxlength="30">
+        </div>
+
       </div>
     </div>
-    <div class="row">
-      <div class="col-lg-4 col-md-4 col-sm-6 d-flex align-items-end">
-        <button type="submit" class="btn btn-primary w-100">שלח</button>
+
+
+    <div class="bid_section details">
+      <h3 class="bid_details_title">פרטי חשבון בנק</h3>
+      <div class="form_section details fly">
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group"><label class="feld_star">*</label><label>שם בנק</label></div>
+          <input type="text" id="bankName" name="bankName" maxlength="50" required="" class="form_field w-input"></div>
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group"><label class="feld_star">*</label><label>מספר סניף</label></div>
+          <input type="text" id="bankBranchNumber" name="bankBranchNumber" maxlength="50" required=""
+                 class="form_field w-input"></div>
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group"><label class="feld_star">*</label><label>שם סניף</label></div>
+          <input type="text" id="bankBranchName" name="bankBranchName" maxlength="50" required=""
+                 class="form_field w-input"></div>
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group"><label class="feld_star">*</label><label>מספר חשבון</label></div>
+          <input type="text" id="bankAccountNumber" name="bankAccountNumber" maxlength="50" required=""
+                 class="form_field w-input"></div>
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group"><label class="feld_star">*</label><label>שם בעל החשבון</label></div>
+          <input type="text" id="bankAccountName" name="bankAccountName" maxlength="50" required=""
+                 class="form_field w-input"></div>
+        <div class="form_field_group txtNormal sm fly">
+          <div class="form_label_group"><label class="feld_star">*</label><label>ת"ז בעל החשבון</label></div>
+          <input type="text" id="bankAccountID" name="bankAccountID" maxlength="9" required=""
+                 class="form_field w-input"></div>
       </div>
     </div>
+
   </form>
 </div>
 
-<script src="js/bundle.js"></script>
+<script src="js/banks-bundle.js"></script>
 </body>
 
 </html>

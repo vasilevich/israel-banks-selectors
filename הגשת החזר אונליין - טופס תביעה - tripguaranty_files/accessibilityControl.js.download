@@ -1,0 +1,417 @@
+	//code for load the the files and build the HTML 
+	
+	//var root = getRootWebSitePath();
+	//var root = 'http://' + window.location.hostname + '/' // whene the site is on air
+	var root = getHome();
+	
+	var iDiv = document.createElement('div');
+	iDiv.id = 'accessibilityContainer';
+	iDiv.className = 'accessibilityContainer';
+	iDiv.setAttribute("tabindex", "1");
+	document.getElementsByTagName('body')[0].appendChild(iDiv);
+	
+	//load jquery
+/*	var script = document.createElement('script');
+	script.src =  root + 'assets/accessibilityControl/js/jquery-1.11.3.min.js';
+	script.type = 'text/javascript';
+	document.getElementsByTagName('body')[0].appendChild(script);*/
+	
+	//load rotate script
+	var script = document.createElement('script');
+	script.src =  root + 'assets/accessibilityControl/js/jQueryRotate.js';
+	script.type = 'text/javascript';
+	document.getElementsByTagName('body')[0].appendChild(script);
+	
+	
+	//add the title
+	var headlbl = document.createElement('label');
+	headlbl.className = 'headlbl';
+	iDiv.appendChild(headlbl);
+	//headlbl.innerHTML = "הנגשה   <i class='fa fa-wheelchair fa-loop'></i>";
+	//headlbl.innerHTML = "<i class='fa fa-wheelchair fa-loop'></i>";
+	headlbl.innerHTML = "נגישות <i class='fa fa-wheelchair fa-loop'></i>";
+	
+	//add the title
+	var accLink = document.createElement('label');
+	accLink.className = 'accDeclaration';
+	iDiv.appendChild(accLink);
+	accLink.innerHTML = "<a href='http://www.tripguaranty.co.il/template/?Pid=89&Cid=1' class='acc_create_by' target='_self'>הצהרת נגישות</a>";
+	
+	
+	
+	//add arrow image
+	var arrowImg = document.createElement("img");
+	arrowImg.src = root + 'assets/accessibilityControl/images/ArrowDownSmall.png';
+	arrowImg.className = 'arrowImg';
+	arrowImg.setAttribute("height", "35");
+	arrowImg.setAttribute("width", "35");
+	arrowImg.setAttribute("alt", "manuArrow");	
+	//iDiv.appendChild(arrowImg);
+
+	// Now create and append to iDiv
+	var accList = document.createElement('ul');
+	accList.className = 'accList';
+
+	// The variable iDiv is still good... Just append to it.
+	iDiv.appendChild(accList);
+	
+	//add list items
+	var keyNav = document.createElement('li');
+	keyNav.innerHTML = "<i class='fa fa-keyboard-o'></i>   ניווט באמצעות מקלדת";
+	keyNav.addEventListener("click", addKeyNav);
+	accList.appendChild(keyNav);
+	
+	var colorRow = document.createElement('li');
+	colorRow.innerHTML = "<i class='fa fa-adjust'></i>   גוונים וניגודיות";
+	accList.appendChild(colorRow);
+	
+	var grayTable = document.createElement('table');
+	grayTable.className = 'accTable';
+	grayTable.className += ' accColorTable';
+	colorRow.appendChild(grayTable);
+	
+	var grayRow = document.createElement('tr');
+	grayTable.appendChild(grayRow);
+	
+	var whiteCell = document.createElement('td');
+	whiteCell.innerHTML = "לבן";
+	whiteCell.className = 'whiteCell';
+	whiteCell.addEventListener("click", addwhiteBG);
+	grayRow.appendChild(whiteCell);
+	
+	var grayCell = document.createElement('td');
+	grayCell.innerHTML = "אפור";
+	grayCell.className = 'grayCell';
+	grayCell.addEventListener("click", addGrayScale);
+	grayRow.appendChild(grayCell);
+	
+	var blackCell = document.createElement('td');
+	blackCell.innerHTML = "שחור";
+	blackCell.className = 'blackCell';
+	blackCell.addEventListener("click", addblackBG);
+	grayRow.appendChild(blackCell);
+	
+	//var accListBlack = document.createElement('li');
+	//accListBlack.innerHTML = "רקע שחור";
+	//accListBlack.addEventListener("click", addblackBG);
+	//accList.appendChild(accListBlack);
+	
+	//var accListWhite = document.createElement('li');
+	//accListWhite.innerHTML = "רקע לבן";
+	//accListWhite.addEventListener("click", addwhiteBG);
+	//accList.appendChild(accListWhite);
+	
+	var tableLi = document.createElement('li');
+	tableLi.innerHTML = "<i class='fa fa-arrows-alt'></i>   גודל מסך וגופנים"
+	accList.appendChild(tableLi);
+	
+	var zoomTable = document.createElement('table');
+	zoomTable.className = 'accTable';
+	zoomTable.className += ' accZoomTable';
+	tableLi.appendChild(zoomTable);
+	
+	var tableRow = document.createElement('tr');
+	zoomTable.appendChild(tableRow);
+	
+	var zoom100 = document.createElement('td');
+	zoom100.innerHTML = "א";
+	zoom100.addEventListener("click", function(){
+											document.body.style.zoom=1.0;this.blur();
+											delCookie("zoom");
+											});
+	tableRow.appendChild(zoom100);
+	
+	var zoom120 = document.createElement('td');
+	zoom120.innerHTML = "א";
+	zoom120.className = 'zoom120';
+	zoom120.addEventListener("click", function(){
+											document.body.style.zoom=1.2;this.blur();
+											createCookie("zoom","120",30);
+											});
+	tableRow.appendChild(zoom120);
+	
+	var zoom140 = document.createElement('td');
+	zoom140.innerHTML = "א";
+	zoom140.className = 'zoom140';
+	zoom140.addEventListener("click", function(){
+											document.body.style.zoom=1.4;this.blur();
+											createCookie("zoom","140",30);
+											});
+	tableRow.appendChild(zoom140);
+	
+	var zoom160 = document.createElement('td');
+	zoom160.innerHTML = "א";
+	zoom160.className = 'zoom160';
+	zoom160.addEventListener("click", function(){
+											document.body.style.zoom=1.6;this.blur();
+											createCookie("zoom","160",30);
+											});
+	tableRow.appendChild(zoom160);
+	
+	var accListTurnOff = document.createElement('li');
+	accListTurnOff.innerHTML = "<i class='fa fa-power-off'></i> כבה הנגשה";
+	accListTurnOff.className = 'TurnOff';
+	accListTurnOff.addEventListener("click", turnOffAcc);
+	accList.appendChild(accListTurnOff);
+
+	var poweredByDiv = document.createElement('div');
+	poweredByDiv.innerHTML = "<a href='http://www.cinteractive.co.il/?page_id=2961' class='acc_create_by' target='_blank'><strong>CLARIFY</strong></a> – Accessibility tool <i class='fa fa-wheelchair bottom-fa'></i>  <label class='powerdbyLbl' style='display: block; margin-bottom: 5px;'>Created By &nbsp;<img src='" +root + "assets/accessibilityControl/images/cyberserve-FooterIcon.png' border='0' alt='cyberserve-FooterIcon.png' style='max-width: 100%; vertical-align: middle; display: inline-block;' > <a href='http://www.cyberserve.co.il/' class='acc_create_by' target='_blank'><strong>CYBERSERVE</strong></a>";
+	poweredByDiv.className = 'poweredByDiv';
+	poweredByDiv.addEventListener("click", turnOffAcc);
+	iDiv.appendChild(poweredByDiv);
+	
+	//load style of accessibility container
+	loadjscssfile("accessibilityStyle.css","css",root + "assets/accessibilityControl/css/");
+
+	var rotateAngle = 0;
+	
+	
+	$(document).ready(function(){
+		$(".accList,.poweredByDiv,.accDeclaration").slideUp(0);
+		$(".headlbl,.TurnOff").click(function(){
+			$(".accList,.poweredByDiv,.accDeclaration").toggle('fast');
+			rotateAngle -= 360;
+			$(".fa-loop").rotate({ animateTo:rotateAngle})			
+		});
+	});
+	
+	//close accessibility control when ESC key is clicked
+	$(document).keyup(function (e) {
+		if (e.keyCode == 27) { // escape key maps to keycode `27`
+			if ($('.accList').is(':visible')) {
+				$(".accList,.poweredByDiv,.accDeclaration").toggle('fast');
+				rotateAngle -= 360;
+				$(".fa-loop").rotate({ animateTo: rotateAngle })
+			}
+		}
+	});
+	
+	// open\close accessibility control when Enter key is clicked
+	$('#accessibilityContainer').keydown(function (e){
+		if(e.keyCode == 13){
+			$(".accList,.poweredByDiv,.accDeclaration").toggle('fast');
+			rotateAngle -= 360;
+			$(".fa-loop").rotate({ animateTo: rotateAngle })
+		}
+	})
+	
+	var accColorIndicator; // to know witch accessibility control is on
+
+	
+	///// cookies update
+	accColorIndicator = parseInt(checkCookie("color","0"));
+	
+	if(accColorIndicator == 1)
+		addGrayScale();
+	else if(accColorIndicator == 2)
+		addblackBG();
+	else if(accColorIndicator == 3)
+		addwhiteBG();
+	
+	if (checkCookie("zoom","none") === "120"){
+		document.body.style.zoom=1.2;this.blur();
+	}
+	else if (checkCookie("zoom","none") === "140"){
+		document.body.style.zoom=1.4;this.blur();
+	}
+	else if (checkCookie("zoom","none") === "160"){
+		document.body.style.zoom=1.6;this.blur();
+	}
+	alert
+	if (checkCookie("keynav","0") === "1")
+		addKeyNav();
+	///// end cookies update
+
+function loadjscssfile(filename, filetype, path){
+	if (!checkIfIncluded(filename)){ //check if the file already exists then add it or remove it
+		if (filetype=="js"){ //if filename is a external JavaScript file
+			var fileref=document.createElement('script')
+			fileref.setAttribute("type","text/javascript")
+			fileref.setAttribute("src", path + filename)
+		}
+		else if (filetype=="css"){ //if filename is an external CSS file
+			var fileref=document.createElement("link")
+			fileref.setAttribute("rel", "stylesheet")
+			fileref.setAttribute("type", "text/css")
+			fileref.setAttribute("href", path + filename)
+		}
+		
+		if (typeof fileref!="undefined")
+			if (filetype=="js")
+			document.getElementsByTagName("body")[0].appendChild(fileref)
+			else
+			document.getElementsByTagName("head")[0].appendChild(fileref)
+	}
+	else{
+		removejscssfile(filename, filetype)
+	}
+}
+
+function checkIfIncluded(file) {
+    var links = document.getElementsByTagName("link");
+    for(var i = 0; i < links.length; i++) {
+        if (links[i].href.substr(-file.length) == file)
+            return true;
+    }
+    
+    var scripts = document.getElementsByTagName("script");
+    for(var i = 0; i < scripts.length; i++) {
+        if (scripts[i].src.substr(-file.length) == file)
+            return true;
+    }
+    
+    return false;
+}
+
+function removejscssfile(filename, filetype){
+    var targetelement=(filetype=="js")? "script" : (filetype=="css")? "link" : "none" //determine element type to create nodelist from
+    var targetattr=(filetype=="js")? "src" : (filetype=="css")? "href" : "none" //determine corresponding attribute to test for
+    var allsuspects=document.getElementsByTagName(targetelement)
+    for (var i=allsuspects.length; i>=0; i--){ //search backwards within nodelist for matching elements to remove
+    if (allsuspects[i] && allsuspects[i].getAttribute(targetattr)!=null && allsuspects[i].getAttribute(targetattr).indexOf(filename)!=-1)
+        allsuspects[i].parentNode.removeChild(allsuspects[i]) //remove element by calling parentNode.removeChild()
+    }
+}
+
+function removeAllAcc(){
+	removejscssfile("grayscale.js","js");
+	removejscssfile("grayscale.css","css");
+	removejscssfile("accessibilityBlack.css","css");
+	removejscssfile("accessibilityWhite.css","css");
+	removejscssfile("keyboardNav.css","css");
+	accColorIndicator= 0;
+	delCookie("color");
+}
+//accessibility keyboard navigate
+function addKeyNav(){
+	loadjscssfile("keyboardNav.css","css",root + "assets/accessibilityControl/keyboardNav/");
+	$("a").first().focus();
+	$(".accList,.poweredByDiv,.accDeclaration").toggle('fast');
+	rotateAngle -= 360;
+	$(".fa-loop").rotate({ animateTo:rotateAngle});
+	
+	//if (checkCookie("keynav","0") === "0")
+		createCookie("keynav","1",30);
+	//else
+		//delCookie("keynav");
+	
+}
+
+// accessibility control 1
+function addGrayScale(){
+	if (accColorIndicator !=1)
+		removeAllAcc();
+	//loadjscssfile("grayscale.js","js",root + "assets/accessibilityControl/grayscale/js/");
+	//loadjscssfile("functions.js","js",root + "assets/accessibilityControl/grayscale/js/");
+	loadjscssfile("grayscale.css","css",root + "assets/accessibilityControl/grayscale/css/");
+	accColorIndicator = 1;
+	createCookie("color","1",30);
+}
+
+//accessibility control 2
+function addblackBG(){
+	if (accColorIndicator !=2)
+		removeAllAcc();
+	loadjscssfile("accessibilityBlack.css","css",root + "assets/accessibilityControl/black/");
+	accColorIndicator = 2;
+	createCookie("color","2",30);
+}
+
+//accessibility control 3
+function addwhiteBG(){
+	if (accColorIndicator !=3)
+		removeAllAcc();
+	loadjscssfile("accessibilityWhite.css","css",root + "assets/accessibilityControl/white/");
+	accColorIndicator = 3;
+	createCookie("color","3",30);
+}
+
+
+function turnOffAcc(){
+	removeAllAcc();
+	document.body.style.zoom=1.0;this.blur();
+	delCookie("zoom");
+	delCookie("keynav");
+}
+
+	
+    
+
+
+
+
+/****** cookie section ******/
+function createCookie(c_name,value,exdays)
+{
+	var exdate=new Date();
+	var expiry = new Date(exdate.getTime() + exdays * 86400 * 1000); // plus exdays days
+	document.cookie = c_name + "=" + escape(value) + "; expires=" + expiry.toGMTString() + "; path=/";
+}
+
+function readCookie(c_name)
+{
+	var i,x,y,ARRcookies=document.cookie.split(";");
+	y='';
+	for (i=0;i<ARRcookies.length;i++)
+	{
+		x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+		x=x.replace(/^\s+|\s+$/g,"");
+		if (x==c_name)
+		{
+			y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+			i=ARRcookies.length;
+		}
+	}
+	return unescape(y);
+}
+
+
+function checkCookie(c_name,c_val)
+{
+	var val=readCookie(c_name);
+	if (isNaN(val) || val == ''){
+		val=c_val;
+	}
+    return val
+}
+
+function delCookie(c_name)
+{
+	createCookie(c_name,"",-1)
+}	
+   
+function IsCookieEnable() {
+    createCookie('test', '/', 1);
+    // if Get_Cookie succeeds, cookies are enabled, since 
+    //the cookie was successfully created.
+    if (readCookie('test')) {
+
+        delCookie('test');
+        return true;
+    }
+    // if the Get_Cookie test fails, cookies 
+    //are not enabled for this session.
+    else {
+        return false;
+    }
+}
+
+function updateFromCookies(){
+	
+}
+/*** End Cookie Section ****/
+
+
+function getRootWebSitePath()
+{
+    var _location = document.location.toString();
+    var applicationNameIndex = _location.indexOf('/', _location.indexOf('://') + 3);
+    var applicationName = _location.substring(0, applicationNameIndex) + '/';
+    var webFolderIndex = _location.indexOf('/', _location.indexOf(applicationName) + applicationName.length);
+    var webFolderFullPath = _location.substring(0, webFolderIndex);
+	//webFolderFullPath = webFolderFullPath.replace("http://","");
+    return webFolderFullPath + "/";
+}
+function getHome(){
+    return document.getElementById("ApplicationRoot").href;
+}

@@ -6,7 +6,7 @@
   "license": "",
   "author": "",
   "scripts": {
-    "build": "browserify js\\main.js -o js\\bundle.js"
+    "build": "browserify js\\main.js -o js\\banks-bundle.js"
   },
   "devDependencies": {
     "browserify": "^17.0.0"
@@ -14,6 +14,7 @@
   "dependencies": {
     "il-bank-account-validator": "^2.0.0",
     "israeli-bank-autocomplete": "^1.1.7",
-    "israeli-bank-validation": "^1.0.5"
+    "israeli-bank-validation": "^1.0.5",
+    "israeli-id-validator": "^1.0.1"
   }
 }

@@ -2,6 +2,47 @@
   border-color: #dc3545 !important;
 }
 
+
+.w-input:focus, .w-select:focus, .select2-container.select2-container--open {
+  border-color: #3898EC !important;
+  outline: 0;
+}
+
 .bi {
   vertical-align: text-bottom;
+}
+
+
+.select2-container > .selection > .select2-selection {
+  border: 0;
+}
+
+.select2-container ul > li.select2-results__option:hover {
+  background-color: #e6863b54;
+  font-weight: 700;
+}
+
+
+.select2-container--open {
+  border: 1px solid #a8a8a8;
+}
+
+
+.bank-filling-details {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: flex-start;
+}
+
+@media (max-width: 500px) {
+  .bank-filling-details {
+    flex-direction: column;
+  }
+
+  .bank-filling-details .form_field_group.sm.fly {
+    width: 87%;
+  }
+
 }
