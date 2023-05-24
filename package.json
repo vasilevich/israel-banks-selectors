@@ -6,10 +6,41 @@
   "license": "",
   "author": "",
   "scripts": {
-    "build": "browserify js\\main.js -o js\\banks-bundle.js"
+    "minify:js": "uglifyjs --compress --mangle -o dist\\js\\banks-bundle.min.js -- dist\\js\\banks-bundle.js",
+    "minify:css": "uglifycss dist\\css\\banks-validators.css > dist\\css\\banks-validators.min.css",
+    "copy-source-to-dist": "copyfiles -a -f js\\* dist\\js\\ && copyfiles -a -f css\\* dist\\css\\ && copyfiles -f index.html dist",
+    "bundle-start": "concat -o ./dist/js/bundle-start.js ./dist/js/select2.min.js ./dist/js/he.min.js",
+    "bundle-main": "browserify ./dist/js/banks-validators.js > ./dist/js/bundle-main.js",
+    "bundle-all": "concat -o ./dist/js/banks-bundle.js ./dist/js/bundle-start.js ./dist/js/bundle-main.js",
+    "clear-leftover-bundle-files": "rimraf ./dist/js/bundle-start.js ./dist/js/bundle-main.js",
+    "bundle": "npm run bundle-start && npm run bundle-main && npm run bundle-all && npm run clear-leftover-bundle-files",
+    "build": "rimraf dist && npm run copy-source-to-dist && npm run bundle && npm run minify:js && npm run minify:css"
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim"
+    ]
+  },
+  "browserify-shim": {
+    "./dist/js/select2.min.js": {
+      "depends": [
+        "jquery:$"
+      ]
+    },
+    "./dist/js/he.min.js": {
+      "depends": [
+        "jquery:$"
+      ]
+    }
   },
   "devDependencies": {
-    "browserify": "^17.0.0"
+    "browserify": "^17.0.0",
+    "browserify-shim": "^3.8.16",
+    "concat": "^1.0.3",
+    "copyfiles": "^2.4.1",
+    "rimraf": "^5.0.1",
+    "uglify-js": "^3.17.4",
+    "uglifycss": "^0.0.29"
   },
   "dependencies": {
     "il-bank-account-validator": "^2.0.0",
