@@ -6,7 +6,8 @@
   try {
     const realBankSection = jQuery("input#bankName").closest(".bid_section.details");
     const isIsraeliIdValid = require("israeli-id-validator");
-    const {validateBankAccount, RESULT} = require("israeli-bank-validation");
+    const validator = require('il-bank-account-validator');
+
     const {
       getAllBanks,
       getAllBranches,
@@ -22,8 +23,8 @@
       window.bankData.bankNumber = bank;
       window.bankData.departmentNumber = branch;
       window.bankData.accountNumber = account;
-      const bankValidationResults = validateBankAccount(`${bank}`, `${branch}`, `${account}`);
-      if (account > 9999 && bankValidationResults === RESULT.VALID) {
+      const bankValidationResults = validator(bank, branch, account);
+      if (account > 9999 && (bankValidationResults || !validator.SUPPORTED_BANKS.includes(bank))) {
         jQuery("#dynamic_accountNumber").removeClass("is-invalid");
         jQuery("#dynamic_accountNumber").addClass("is-valid");
         const bankObj = getAllBanks().find(bankObj => parseInt(bankObj.bankCode, 10) === bank);
@@ -98,14 +99,14 @@
 // Initialize Select2 for bank and department numbers
     jQuery(document).ready(function () {
       jQuery("#dynamic_bankNumber").select2({
-        placeholder: "בחר בנק",
+        placeholder: '',
         allowClear: true,
-        data: allBanks.map(bank => ({id: bank.bankCode, text: `${bank.bankCode} - ${bank.bankName}`}))
+        data: allBanks.map(bank => ({id: bank.bankCode, text: `${bank.bankCode} - ${bank.bankName}`})),
       });
 
       jQuery("#dynamic_departmentNumber").select2({
-        placeholder: "בחר סניף",
-        allowClear: true
+        placeholder: '',
+        allowClear: true,
       });
 
       // Update the department list when a bank is selected
@@ -123,7 +124,7 @@
             jQuery("#dynamic_departmentNumber")
               .empty()
               .select2({
-                placeholder: "Select a department",
+                placeholder: '',
                 allowClear: true,
                 data: departmentOptions
               })
@@ -222,7 +223,7 @@
   }
 })();
 
-},{"israeli-bank-autocomplete":9,"israeli-bank-validation":31,"israeli-id-validator":33}],2:[function(require,module,exports){
+},{"il-bank-account-validator":6,"israeli-bank-autocomplete":10,"israeli-id-validator":32}],2:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -2246,6 +2247,262 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 }
 
 },{}],6:[function(require,module,exports){
+/* Unsupported and legacy banks:
+ * ?? - Pepper Pay
+ * 1 - Euro Trade
+ * 2 - Poalei Agudat Israel
+ * 6 - Adanim (merged with Mizrahi Tefahot)
+ * 7 - Bank Lepituah Ataasiya
+ * 8 - Poalim / Asfanot
+ * 19 - Bank Ahaklaut Leisrael
+ * 23 - HSBC
+ * 24 - Poalim
+ * 25 - BNP Paribas
+ * 26 - Yobank (merged with 31)
+ * 27 - Barclays Bank PLC​
+ * 28 - Poalim
+ * 30 - Bank Lemishar
+ * 33 - Discount
+ * 37 - Of Jordan
+ * 38 - Commercial Bank of Palestine
+ * 39 - SBI State Bank of India
+ * 43 - Jordan National Bank PLC Aman
+ * 48 - Otsar Ahayal / Aoved Aleumi
+ * 49 - Arav Bank
+ * 50 - Bank Clearing Center
+ * 59 - Automatic Bank Services
+ * 65 - Hasah Kupot Hisahon Lehinuh
+ * 66 - Kahir Aman
+ * 67 - Arab Land
+ * 68 - Bank Dexia 
+ * 71 - Commercial Jordan
+ * 73 - Arav Islamic
+ * 74 - British Bank of Middle East
+ * 76 - Palestine Investments
+ * 77 - Leumi Mashkantaot
+ * 82 - אל-קודס לפיתוח והשקעות
+ * 83 - Union Bank
+ * 84 - האוזינג
+ * 89 - Palestine
+ * 90 - Discount Mashkantaot
+ * 93 - ג'ורדן כווית
+ * 99 - Bank Israel
+ */
+'use strict';
+ var SUPPORTED_BANKS = {
+        YAHAV: 4, // Government workers
+        POST: 9,
+        LEUMI: 10,
+        DISCOUNT: 11,
+        HAPOALIM: 12,
+        IGUD: 13,
+        OTSAR_AHAYAL: 14,
+        MERCANTILE: 17,
+        MIZRAHI_TEFAHOT: 20,
+        CITIBANK: 22,
+        BEINLEUMI: 31,
+        ARAVEI_ISRAELI: 34, // Merged with Leumi
+        MASAD: 46,
+        POALEI_AGUDAT_ISRAEL: 52 // merged with Beinleumi
+    };
+
+
+var banksValidator = function(bankNumber, branchNumber, accountNumber) {
+    // Input validation:
+    if(bankNumber.constructor === String) {
+        bankNumber = Number(bankNumber);
+    }
+    if(branchNumber.constructor === String) {
+        branchNumber = Number(branchNumber);
+    }
+    if(accountNumber.constructor === String) {
+        accountNumber = Number(accountNumber);
+    }
+    if(!isNonNegativeInteger(bankNumber)) {
+        return false;
+    }
+    if(!isNonNegativeInteger(branchNumber)) {
+        return false;
+    }
+    if(!isNonNegativeInteger(accountNumber)) {
+        return false;
+    }
+
+    if(bankNumber === SUPPORTED_BANKS.MIZRAHI_TEFAHOT) {
+        if(branchNumber > 400) {
+            branchNumber -= 400;
+        }
+    }
+
+    var accountNumberDigits = numberDigitsToArr(accountNumber, 9);
+    var branchNumberDigits  = numberDigitsToArr(branchNumber, 3);
+
+    // Account number validation
+    var sum = 0;
+    var remainder = 0;
+    switch(bankNumber) {
+        case(SUPPORTED_BANKS.LEUMI):
+        case(SUPPORTED_BANKS.IGUD):
+        case(SUPPORTED_BANKS.ARAVEI_ISRAELI):
+            sum =  scalarProduct(accountNumberDigits.slice(0, 8), [1, 10, 2, 3, 4, 5, 6, 7]);
+            sum += scalarProduct(branchNumberDigits.slice(0, 4), [8, 9, 10]);
+            remainder = sum % 100;
+            return arrIncludes([90, 72, 70, 60, 20], remainder);
+
+        case(SUPPORTED_BANKS.YAHAV):
+        case(SUPPORTED_BANKS.MIZRAHI_TEFAHOT):
+        case(SUPPORTED_BANKS.HAPOALIM):
+            sum =  scalarProduct(accountNumberDigits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
+            sum += scalarProduct(branchNumberDigits.slice(0, 4), [7, 8, 9]);
+            remainder = sum % 11;
+
+            switch (bankNumber) {
+                case (SUPPORTED_BANKS.YAHAV):
+                    return arrIncludes([0, 2], remainder);
+                case (SUPPORTED_BANKS.MIZRAHI_TEFAHOT):
+                    return arrIncludes([0, 2, 4], remainder);
+                case (SUPPORTED_BANKS.HAPOALIM):
+                    return arrIncludes([0, 2, 4, 6], remainder);
+            }
+            return false;
+
+        case(SUPPORTED_BANKS.DISCOUNT):
+        case(SUPPORTED_BANKS.MERCANTILE):
+        case(SUPPORTED_BANKS.BEINLEUMI):
+        case(SUPPORTED_BANKS.POALEI_AGUDAT_ISRAEL):
+            sum = scalarProduct(accountNumberDigits.slice(0, 9), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+            remainder = sum % 11;
+
+            switch (bankNumber) {
+                case(SUPPORTED_BANKS.DISCOUNT):
+                case(SUPPORTED_BANKS.MERCANTILE):
+                    return arrIncludes([0, 2, 4], remainder);
+                
+                case(SUPPORTED_BANKS.BEINLEUMI):
+                case(SUPPORTED_BANKS.POALEI_AGUDAT_ISRAEL):
+                    if(arrIncludes([0, 6], remainder)) {
+                        return true;
+
+                    } else {
+                        sum = scalarProduct(accountNumberDigits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
+                        remainder = sum % 11;
+                        return arrIncludes([0, 6], remainder);
+                    }
+            }
+            return false;
+
+        case(SUPPORTED_BANKS.POST):
+            sum = scalarProduct(accountNumberDigits.slice(0, 9), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+            remainder = sum % 10;
+            return remainder === 0;
+
+        case(54): // Jerusalem
+            return true; // wtf?
+
+        case(SUPPORTED_BANKS.CITIBANK):
+            sum = scalarProduct(accountNumberDigits.slice(1, 9), [2, 3, 4, 5, 6, 7, 2, 3]);
+            return (11 - sum % 11) === accountNumberDigits[0];
+
+        case(SUPPORTED_BANKS.OTSAR_AHAYAL):
+        case(SUPPORTED_BANKS.MASAD):
+            sum =  scalarProduct(accountNumberDigits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
+            sum += scalarProduct(branchNumberDigits.slice(0, 4), [7, 8, 9]);
+            remainder = sum % 11;
+
+            if(remainder === 0) {
+                return true;
+            }
+
+            if(bankNumber === SUPPORTED_BANKS.MASAD) {
+                if (remainder === 2 && arrIncludes([154, 166, 178, 181, 183, 191, 192, 503, 505, 507, 515, 516, 527, 539], branchNumber)) {
+                    return true;
+                }
+
+                sum = scalarProduct(accountNumberDigits.slice(0, 9), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                remainder = sum % 11;
+                
+                if(remainder === 0) {
+                    return true;
+
+                } else {
+                    sum = scalarProduct(accountNumberDigits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
+                    remainder = sum % 11;
+                    return remainder === 0;
+                }
+            }
+            if(bankNumber === SUPPORTED_BANKS.OTSAR_AHAYAL) {
+                if (arrIncludes([0, 2], remainder) && arrIncludes([385, 384, 365, 347, 363, 362, 361], branchNumber)) {
+                    return true;
+
+                } else if(remainder === 4 && arrIncludes([363, 362, 361], branchNumber)) {
+                    return true;
+
+                } else {
+                    sum = scalarProduct(accountNumberDigits.slice(0, 9), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                    remainder = sum % 11;
+                    if(remainder === 0) {
+                        return true;
+                    } else {
+                        sum = scalarProduct(accountNumberDigits.slice(0, 6), [1, 2, 3, 4, 5, 6]);
+                        remainder = sum % 11;
+                        return remainder === 0;
+                    }
+                }
+            }
+            return false;
+    }
+
+    return false;
+
+    /**
+     * Calculates scalar product of two arrays of the same length.
+     * https://en.wikipedia.org/wiki/Dot_product
+     * @param {Array} arr1 
+     * @param {Array} arr2 
+     */
+    function scalarProduct(arr1, arr2) {
+        var product = 0;
+        for (var i = 0; i < arr1.length && i < arr2.length; ++i) {
+            product += arr1[i] * arr2[i];
+        }
+        return product;
+    }
+
+    /**
+     * Check if `val` is an element of `arr` using strict compare by reference
+     * A bit like arr.includes(val), but made in-house for legacy browser support
+     * @param {Array} arr 
+     * @param {*} val 
+     */
+    function arrIncludes(arr, val) {
+        if (arr) {
+            for (var i = 0; i < arr.length; ++i) {
+                if (arr[i] === val) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function numberDigitsToArr(num, length) {
+        var digitsArray = [];
+        for (var i = 0; i < length; ++i) {
+            digitsArray.push(num % 10);
+            num = Math.floor(num / 10);
+        }
+        return digitsArray;
+    }
+
+    function isNonNegativeInteger(num) {
+        return num.constructor == Number && !isNaN(num) && num >= 0 && num == Math.floor(num);
+    }
+};
+banksValidator.SUPPORTED_BANKS = SUPPORTED_BANKS;
+
+module.exports = banksValidator;
+
+},{}],7:[function(require,module,exports){
 module.exports={
     "branches": [
         {
@@ -35667,7 +35924,7 @@ module.exports={
     ]
 }
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -35802,7 +36059,7 @@ var BankDataSource = /** @class */ (function () {
 var dataSource = new BankDataSource();
 exports.default = dataSource;
 
-},{"./bank-data.json":6,"./functions":8}],8:[function(require,module,exports){
+},{"./bank-data.json":7,"./functions":9}],9:[function(require,module,exports){
 "use strict";
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -35991,7 +36248,7 @@ function convertBranchesDataFromIsraelBankCSV(csv) {
 }
 exports.convertBranchesDataFromIsraelBankCSV = convertBranchesDataFromIsraelBankCSV;
 
-},{"iconv-lite":29,"node-fetch":34,"papaparse":35}],9:[function(require,module,exports){
+},{"iconv-lite":30,"node-fetch":33,"papaparse":34}],10:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -36052,7 +36309,7 @@ exports.getAllBanks = getAllBanks;
 var fetchNewDataFromIsraelBank = function () { return dataSource_1.default.fetchNewDataFromIsraelBank(); };
 exports.fetchNewDataFromIsraelBank = fetchNewDataFromIsraelBank;
 
-},{"./dataSource":7}],10:[function(require,module,exports){
+},{"./dataSource":8}],11:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -36651,7 +36908,7 @@ function findIdx(table, val) {
 }
 
 
-},{"safer-buffer":38}],11:[function(require,module,exports){
+},{"safer-buffer":37}],12:[function(require,module,exports){
 "use strict";
 
 // Description of supported double byte encodings and aliases.
@@ -36841,7 +37098,7 @@ module.exports = {
     'xxbig5': 'big5hkscs',
 };
 
-},{"./tables/big5-added.json":17,"./tables/cp936.json":18,"./tables/cp949.json":19,"./tables/cp950.json":20,"./tables/eucjp.json":21,"./tables/gb18030-ranges.json":22,"./tables/gbk-added.json":23,"./tables/shiftjis.json":24}],12:[function(require,module,exports){
+},{"./tables/big5-added.json":18,"./tables/cp936.json":19,"./tables/cp949.json":20,"./tables/cp950.json":21,"./tables/eucjp.json":22,"./tables/gb18030-ranges.json":23,"./tables/gbk-added.json":24,"./tables/shiftjis.json":25}],13:[function(require,module,exports){
 "use strict";
 
 // Update this array if you add/rename/remove files in this directory.
@@ -36866,7 +37123,7 @@ for (var i = 0; i < modules.length; i++) {
             exports[enc] = module[enc];
 }
 
-},{"./dbcs-codec":10,"./dbcs-data":11,"./internal":13,"./sbcs-codec":14,"./sbcs-data":16,"./sbcs-data-generated":15,"./utf16":25,"./utf32":26,"./utf7":27}],13:[function(require,module,exports){
+},{"./dbcs-codec":11,"./dbcs-data":12,"./internal":14,"./sbcs-codec":15,"./sbcs-data":17,"./sbcs-data-generated":16,"./utf16":26,"./utf32":27,"./utf7":28}],14:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -37066,7 +37323,7 @@ InternalDecoderCesu8.prototype.end = function() {
     return res;
 }
 
-},{"safer-buffer":38,"string_decoder":39}],14:[function(require,module,exports){
+},{"safer-buffer":37,"string_decoder":38}],15:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -37140,7 +37397,7 @@ SBCSDecoder.prototype.write = function(buf) {
 SBCSDecoder.prototype.end = function() {
 }
 
-},{"safer-buffer":38}],15:[function(require,module,exports){
+},{"safer-buffer":37}],16:[function(require,module,exports){
 "use strict";
 
 // Generated data for sbcs codec. Don't edit manually. Regenerate using generation/gen-sbcs.js script.
@@ -37592,7 +37849,7 @@ module.exports = {
     "chars": "���������������������������������กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรฤลฦวศษสหฬอฮฯะัาำิีึืฺุู����฿เแโใไๅๆ็่้๊๋์ํ๎๏๐๑๒๓๔๕๖๗๘๙๚๛����"
   }
 }
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 // Manually added data to be used by sbcs codec in addition to generated one.
@@ -37773,7 +38030,7 @@ module.exports = {
 };
 
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 module.exports=[
 ["8740","䏰䰲䘃䖦䕸𧉧䵷䖳𧲱䳢𧳅㮕䜶䝄䱇䱀𤊿𣘗𧍒𦺋𧃒䱗𪍑䝏䗚䲅𧱬䴇䪤䚡𦬣爥𥩔𡩣𣸆𣽡晍囻"],
 ["8767","綕夝𨮹㷴霴𧯯寛𡵞媤㘥𩺰嫑宷峼杮薓𩥅瑡璝㡵𡵓𣚞𦀡㻬"],
@@ -37897,7 +38154,7 @@ module.exports=[
 ["fea1","𤅟𤩹𨮏孆𨰃𡢞瓈𡦈甎瓩甞𨻙𡩋寗𨺬鎅畍畊畧畮𤾂㼄𤴓疎瑝疞疴瘂瘬癑癏癯癶𦏵皐臯㟸𦤑𦤎皡皥皷盌𦾟葢𥂝𥅽𡸜眞眦着撯𥈠睘𣊬瞯𨥤𨥨𡛁矴砉𡍶𤨒棊碯磇磓隥礮𥗠磗礴碱𧘌辸袄𨬫𦂃𢘜禆褀椂禀𥡗禝𧬹礼禩渪𧄦㺨秆𩄍秔"]
 ]
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127,"€"],
 ["8140","丂丄丅丆丏丒丗丟丠両丣並丩丮丯丱丳丵丷丼乀乁乂乄乆乊乑乕乗乚乛乢乣乤乥乧乨乪",5,"乲乴",9,"乿",6,"亇亊"],
@@ -38163,7 +38420,7 @@ module.exports=[
 ["fe40","兀嗀﨎﨏﨑﨓﨔礼﨟蘒﨡﨣﨤﨧﨨﨩"]
 ]
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8141","갂갃갅갆갋",4,"갘갞갟갡갢갣갥",6,"갮갲갳갴"],
@@ -38438,7 +38695,7 @@ module.exports=[
 ["fda1","爻肴酵驍侯候厚后吼喉嗅帿後朽煦珝逅勛勳塤壎焄熏燻薰訓暈薨喧暄煊萱卉喙毁彙徽揮暉煇諱輝麾休携烋畦虧恤譎鷸兇凶匈洶胸黑昕欣炘痕吃屹紇訖欠欽歆吸恰洽翕興僖凞喜噫囍姬嬉希憙憘戱晞曦熙熹熺犧禧稀羲詰"]
 ]
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["a140","　，、。．‧；：？！︰…‥﹐﹑﹒·﹔﹕﹖﹗｜–︱—︳╴︴﹏（）︵︶｛｝︷︸〔〕︹︺【】︻︼《》︽︾〈〉︿﹀「」﹁﹂『』﹃﹄﹙﹚"],
@@ -38617,7 +38874,7 @@ module.exports=[
 ["f9a1","龤灨灥糷虪蠾蠽蠿讞貜躩軉靋顳顴飌饡馫驤驦驧鬤鸕鸗齈戇欞爧虌躨钂钀钁驩驨鬮鸙爩虋讟钃鱹麷癵驫鱺鸝灩灪麤齾齉龘碁銹裏墻恒粧嫺╔╦╗╠╬╣╚╩╝╒╤╕╞╪╡╘╧╛╓╥╖╟╫╢╙╨╜║═╭╮╰╯▓"]
 ]
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8ea1","｡",62],
@@ -38801,9 +39058,9 @@ module.exports=[
 ["8feda1","黸黿鼂鼃鼉鼏鼐鼑鼒鼔鼖鼗鼙鼚鼛鼟鼢鼦鼪鼫鼯鼱鼲鼴鼷鼹鼺鼼鼽鼿齁齃",4,"齓齕齖齗齘齚齝齞齨齩齭",4,"齳齵齺齽龏龐龑龒龔龖龗龞龡龢龣龥"]
 ]
 
-},{}],22:[function(require,module,exports){
-module.exports={"uChars":[128,165,169,178,184,216,226,235,238,244,248,251,253,258,276,284,300,325,329,334,364,463,465,467,469,471,473,475,477,506,594,610,712,716,730,930,938,962,970,1026,1104,1106,8209,8215,8218,8222,8231,8241,8244,8246,8252,8365,8452,8454,8458,8471,8482,8556,8570,8596,8602,8713,8720,8722,8726,8731,8737,8740,8742,8748,8751,8760,8766,8777,8781,8787,8802,8808,8816,8854,8858,8870,8896,8979,9322,9372,9548,9588,9616,9622,9634,9652,9662,9672,9676,9680,9702,9735,9738,9793,9795,11906,11909,11913,11917,11928,11944,11947,11951,11956,11960,11964,11979,12284,12292,12312,12319,12330,12351,12436,12447,12535,12543,12586,12842,12850,12964,13200,13215,13218,13253,13263,13267,13270,13384,13428,13727,13839,13851,14617,14703,14801,14816,14964,15183,15471,15585,16471,16736,17208,17325,17330,17374,17623,17997,18018,18212,18218,18301,18318,18760,18811,18814,18820,18823,18844,18848,18872,19576,19620,19738,19887,40870,59244,59336,59367,59413,59417,59423,59431,59437,59443,59452,59460,59478,59493,63789,63866,63894,63976,63986,64016,64018,64021,64025,64034,64037,64042,65074,65093,65107,65112,65127,65132,65375,65510,65536],"gbChars":[0,36,38,45,50,81,89,95,96,100,103,104,105,109,126,133,148,172,175,179,208,306,307,308,309,310,311,312,313,341,428,443,544,545,558,741,742,749,750,805,819,820,7922,7924,7925,7927,7934,7943,7944,7945,7950,8062,8148,8149,8152,8164,8174,8236,8240,8262,8264,8374,8380,8381,8384,8388,8390,8392,8393,8394,8396,8401,8406,8416,8419,8424,8437,8439,8445,8482,8485,8496,8521,8603,8936,8946,9046,9050,9063,9066,9076,9092,9100,9108,9111,9113,9131,9162,9164,9218,9219,11329,11331,11334,11336,11346,11361,11363,11366,11370,11372,11375,11389,11682,11686,11687,11692,11694,11714,11716,11723,11725,11730,11736,11982,11989,12102,12336,12348,12350,12384,12393,12395,12397,12510,12553,12851,12962,12973,13738,13823,13919,13933,14080,14298,14585,14698,15583,15847,16318,16434,16438,16481,16729,17102,17122,17315,17320,17402,17418,17859,17909,17911,17915,17916,17936,17939,17961,18664,18703,18814,18962,19043,33469,33470,33471,33484,33485,33490,33497,33501,33505,33513,33520,33536,33550,37845,37921,37948,38029,38038,38064,38065,38066,38069,38075,38076,38078,39108,39109,39113,39114,39115,39116,39265,39394,189000]}
 },{}],23:[function(require,module,exports){
+module.exports={"uChars":[128,165,169,178,184,216,226,235,238,244,248,251,253,258,276,284,300,325,329,334,364,463,465,467,469,471,473,475,477,506,594,610,712,716,730,930,938,962,970,1026,1104,1106,8209,8215,8218,8222,8231,8241,8244,8246,8252,8365,8452,8454,8458,8471,8482,8556,8570,8596,8602,8713,8720,8722,8726,8731,8737,8740,8742,8748,8751,8760,8766,8777,8781,8787,8802,8808,8816,8854,8858,8870,8896,8979,9322,9372,9548,9588,9616,9622,9634,9652,9662,9672,9676,9680,9702,9735,9738,9793,9795,11906,11909,11913,11917,11928,11944,11947,11951,11956,11960,11964,11979,12284,12292,12312,12319,12330,12351,12436,12447,12535,12543,12586,12842,12850,12964,13200,13215,13218,13253,13263,13267,13270,13384,13428,13727,13839,13851,14617,14703,14801,14816,14964,15183,15471,15585,16471,16736,17208,17325,17330,17374,17623,17997,18018,18212,18218,18301,18318,18760,18811,18814,18820,18823,18844,18848,18872,19576,19620,19738,19887,40870,59244,59336,59367,59413,59417,59423,59431,59437,59443,59452,59460,59478,59493,63789,63866,63894,63976,63986,64016,64018,64021,64025,64034,64037,64042,65074,65093,65107,65112,65127,65132,65375,65510,65536],"gbChars":[0,36,38,45,50,81,89,95,96,100,103,104,105,109,126,133,148,172,175,179,208,306,307,308,309,310,311,312,313,341,428,443,544,545,558,741,742,749,750,805,819,820,7922,7924,7925,7927,7934,7943,7944,7945,7950,8062,8148,8149,8152,8164,8174,8236,8240,8262,8264,8374,8380,8381,8384,8388,8390,8392,8393,8394,8396,8401,8406,8416,8419,8424,8437,8439,8445,8482,8485,8496,8521,8603,8936,8946,9046,9050,9063,9066,9076,9092,9100,9108,9111,9113,9131,9162,9164,9218,9219,11329,11331,11334,11336,11346,11361,11363,11366,11370,11372,11375,11389,11682,11686,11687,11692,11694,11714,11716,11723,11725,11730,11736,11982,11989,12102,12336,12348,12350,12384,12393,12395,12397,12510,12553,12851,12962,12973,13738,13823,13919,13933,14080,14298,14585,14698,15583,15847,16318,16434,16438,16481,16729,17102,17122,17315,17320,17402,17418,17859,17909,17911,17915,17916,17936,17939,17961,18664,18703,18814,18962,19043,33469,33470,33471,33484,33485,33490,33497,33501,33505,33513,33520,33536,33550,37845,37921,37948,38029,38038,38064,38065,38066,38069,38075,38076,38078,39108,39109,39113,39114,39115,39116,39265,39394,189000]}
+},{}],24:[function(require,module,exports){
 module.exports=[
 ["a140","",62],
 ["a180","",32],
@@ -38861,7 +39118,7 @@ module.exports=[
 ["8135f437",""]
 ]
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",128],
 ["a1","｡",62],
@@ -38988,7 +39245,7 @@ module.exports=[
 ["fc40","髜魵魲鮏鮱鮻鰀鵰鵫鶴鸙黑"]
 ]
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -39187,7 +39444,7 @@ function detectEncoding(bufs, defaultEncoding) {
 
 
 
-},{"safer-buffer":38}],26:[function(require,module,exports){
+},{"safer-buffer":37}],27:[function(require,module,exports){
 'use strict';
 
 var Buffer = require('safer-buffer').Buffer;
@@ -39508,7 +39765,7 @@ function detectEncoding(bufs, defaultEncoding) {
     return defaultEncoding || 'utf-32le';
 }
 
-},{"safer-buffer":38}],27:[function(require,module,exports){
+},{"safer-buffer":37}],28:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -39800,7 +40057,7 @@ Utf7IMAPDecoder.prototype.end = function() {
 
 
 
-},{"safer-buffer":38}],28:[function(require,module,exports){
+},{"safer-buffer":37}],29:[function(require,module,exports){
 "use strict";
 
 var BOMChar = '\uFEFF';
@@ -39854,7 +40111,7 @@ StripBOMWrapper.prototype.end = function() {
 }
 
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 "use strict";
 
 var Buffer = require("safer-buffer").Buffer;
@@ -40036,7 +40293,7 @@ if ("Ā" != "\u0100") {
     console.error("iconv-lite warning: js files use non-utf8 encoding. See https://github.com/ashtuchkin/iconv-lite/wiki/Javascript-source-file-encodings for more info.");
 }
 
-},{"../encodings":12,"./bom-handling":28,"./streams":30,"safer-buffer":38,"stream":3}],30:[function(require,module,exports){
+},{"../encodings":13,"./bom-handling":29,"./streams":31,"safer-buffer":37,"stream":3}],31:[function(require,module,exports){
 "use strict";
 
 var Buffer = require("safer-buffer").Buffer;
@@ -40147,281 +40404,7 @@ module.exports = function(stream_module) {
     };
 };
 
-},{"safer-buffer":38}],31:[function(require,module,exports){
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateBankAccount = exports.RESULT = void 0;
-var vector_1 = require("./vector");
-exports.RESULT = {
-    VALID: "VALID",
-    NOT_VALID: "NOT_VALID",
-    UNKNOWN: "UNKNOWN",
-};
-/**
- * Validate bank details
- * @param {string} bankId the bank id
- * @param {string} branch the branch id
- * @param {string} account the account number
- */
-function validateBankAccount(bankId, branch, account) {
-    if (bankId.length > 2)
-        return exports.RESULT.NOT_VALID;
-    if (branch.length > 3)
-        return exports.RESULT.NOT_VALID;
-    if (account.length > 9)
-        return exports.RESULT.NOT_VALID;
-    var accountVec;
-    var validateAccount;
-    var branchVec = new vector_1.default(branch, 3);
-    var validateBranch;
-    var sum = 0;
-    switch (parseInt(bankId, 10)) {
-        case 10:
-        case 13:
-        case 34:
-            validateBranch = new vector_1.default(["10", "9", "8"]);
-            validateAccount = new vector_1.default(["7", "6", "5", "4", "3", "2", "0", "0"]);
-            accountVec = new vector_1.default(account, 8);
-            sum =
-                (validateBranch.mult(branchVec) +
-                    validateAccount.mult(accountVec) +
-                    accountVec.get(6) +
-                    accountVec.get(7)) %
-                    100;
-            return [20, 60, 70, 72, 90].includes(sum)
-                ? exports.RESULT.VALID
-                : exports.RESULT.NOT_VALID;
-        case 12:
-            validateBranch = new vector_1.default(["9", "8", "7"]);
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            accountVec = new vector_1.default(account, 6);
-            sum =
-                (validateBranch.mult(branchVec) + validateAccount.mult(accountVec)) %
-                    11;
-            return [0, 2, 4, 6].includes(sum) ? exports.RESULT.VALID : exports.RESULT.NOT_VALID;
-        case 4:
-            validateBranch = new vector_1.default(["9", "8", "7"]);
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            accountVec = new vector_1.default(account, 6);
-            sum =
-                (validateBranch.mult(branchVec) + validateAccount.mult(accountVec)) %
-                    11;
-            return [0, 2].includes(sum) ? exports.RESULT.VALID : exports.RESULT.NOT_VALID;
-        case 11:
-        case 17:
-            validateAccount = new vector_1.default([
-                "9",
-                "8",
-                "7",
-                "6",
-                "5",
-                "4",
-                "3",
-                "2",
-                "1",
-            ]);
-            accountVec = new vector_1.default(account, 9);
-            sum = validateAccount.mult(accountVec) % 11;
-            return [0, 2, 4].includes(sum) ? exports.RESULT.VALID : exports.RESULT.NOT_VALID;
-        case 20:
-            if (parseInt(branch, 10) > 400) {
-                branch = String(parseInt(branch, 10) - 400);
-            }
-            branchVec = new vector_1.default(branch, 3);
-            validateBranch = new vector_1.default(["9", "8", "7"]);
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            accountVec = new vector_1.default(account, 6);
-            sum =
-                (validateBranch.mult(branchVec) + validateAccount.mult(accountVec)) %
-                    11;
-            return [0, 2, 4].includes(sum) ? exports.RESULT.VALID : exports.RESULT.NOT_VALID;
-        case 31:
-        case 52:
-            validateAccount = new vector_1.default([
-                "9",
-                "8",
-                "7",
-                "6",
-                "5",
-                "4",
-                "3",
-                "2",
-                "1",
-            ]);
-            accountVec = new vector_1.default(account, 9);
-            sum = validateAccount.mult(accountVec) % 11;
-            if ([0, 6].includes(sum)) {
-                return exports.RESULT.VALID;
-            }
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            accountVec = new vector_1.default(account, 6);
-            return [0, 6].indexOf(validateAccount.mult(accountVec)) !== -1
-                ? exports.RESULT.VALID
-                : exports.RESULT.NOT_VALID;
-        case 9:
-            validateAccount = new vector_1.default([
-                "9",
-                "8",
-                "7",
-                "6",
-                "5",
-                "4",
-                "3",
-                "2",
-                "1",
-            ]);
-            accountVec = new vector_1.default(account, 9);
-            return validateAccount.mult(accountVec) % 10 === 0
-                ? exports.RESULT.VALID
-                : exports.RESULT.NOT_VALID;
-        case 22:
-            validateAccount = new vector_1.default([
-                "3",
-                "2",
-                "7",
-                "6",
-                "5",
-                "4",
-                "3",
-                "2",
-                "0",
-            ]);
-            accountVec = new vector_1.default(account, 9);
-            return 11 - (accountVec.mult(validateAccount) % 11) === accountVec.get(8)
-                ? exports.RESULT.VALID
-                : exports.RESULT.NOT_VALID;
-        case 46:
-            accountVec = new vector_1.default(account, 6);
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            validateBranch = new vector_1.default(["9", "8", "7"]);
-            sum = validateBranch.mult(branchVec) + validateAccount.mult(accountVec);
-            if (sum % 11 === 0) {
-                return exports.RESULT.VALID;
-            }
-            if ([
-                "154",
-                "166",
-                "178",
-                "181",
-                "183",
-                "191",
-                "192",
-                "503",
-                "505",
-                "507",
-                "515",
-                "516",
-                "527",
-                "539",
-            ].indexOf(branch) !== 1 &&
-                sum % 11 === 2) {
-                return exports.RESULT.VALID;
-            }
-            accountVec = new vector_1.default(account, 9);
-            validateAccount = new vector_1.default([
-                "9",
-                "8",
-                "7",
-                "6",
-                "5",
-                "4",
-                "3",
-                "2",
-                "1",
-            ]);
-            if (validateAccount.mult(accountVec) % 11 === 0) {
-                return exports.RESULT.VALID;
-            }
-            accountVec = new vector_1.default(account, 6);
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            return validateAccount.mult(accountVec) === 0
-                ? exports.RESULT.VALID
-                : exports.RESULT.NOT_VALID;
-        case 14:
-            accountVec = new vector_1.default(account, 6);
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            validateBranch = new vector_1.default(["9", "8", "7"]);
-            sum = validateBranch.mult(branchVec) + validateAccount.mult(accountVec);
-            if (sum % 11 === 0) {
-                return exports.RESULT.VALID;
-            }
-            if (["385", "384", "365", "347", "363", "362", "361"].includes(branch) &&
-                sum % 11 === 2) {
-                return exports.RESULT.VALID;
-            }
-            if (["363", "362", "361"].includes(branch) && sum % 11 === 4) {
-                return exports.RESULT.VALID;
-            }
-            accountVec = new vector_1.default(account, 9);
-            validateAccount = new vector_1.default([
-                "9",
-                "8",
-                "7",
-                "6",
-                "5",
-                "4",
-                "3",
-                "2",
-                "1",
-            ]);
-            if (validateAccount.mult(accountVec) % 11 === 0) {
-                return exports.RESULT.VALID;
-            }
-            validateAccount = new vector_1.default(["6", "5", "4", "3", "2", "1"]);
-            return validateAccount.mult(accountVec) % 11 === 0
-                ? exports.RESULT.VALID
-                : exports.RESULT.NOT_VALID;
-        default:
-            return exports.RESULT.UNKNOWN;
-    }
-}
-exports.validateBankAccount = validateBankAccount;
-
-},{"./vector":32}],32:[function(require,module,exports){
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-var Vector = /** @class */ (function () {
-    function Vector(input, length) {
-        if (Array.isArray(input)) {
-            this.array = input.map(function (item) { return parseInt(item, 10); });
-            return;
-        }
-        if (!length) {
-            this.array = [];
-            return;
-        }
-        var arr = Array.from(input.replace(/\D+/g, "")).map(function (item) {
-            return parseInt(item);
-        });
-        var missing = length - arr.length;
-        if (missing > 0) {
-            for (var index = 0; index < missing; index++) {
-                arr.unshift(0);
-            }
-        }
-        else {
-            for (var index = 0; index < Math.abs(missing); index++) {
-                arr.shift();
-            }
-        }
-        this.array = arr;
-    }
-    Vector.prototype.mult = function (other) {
-        var res = 0;
-        var length = Math.min(this.array.length, other.array.length);
-        for (var index = 0; index < length; index++) {
-            res = res + this.array[index] * other.array[index];
-        }
-        return res;
-    };
-    Vector.prototype.get = function (index) {
-        return this.array[index];
-    };
-    return Vector;
-}());
-exports.default = Vector;
-
-},{}],33:[function(require,module,exports){
+},{"safer-buffer":37}],32:[function(require,module,exports){
 module.exports = function isIsraeliIdValid(id)
 {
     let strId = String(id).trim();
@@ -40440,7 +40423,7 @@ module.exports = function isIsraeliIdValid(id)
     return (counter % 10 === 0);
 };
 
-},{}],34:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 (function (global){(function (){
 "use strict";
 
@@ -40469,7 +40452,7 @@ exports.Request = globalObject.Request;
 exports.Response = globalObject.Response;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],35:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /* @license
 Papa Parse
 v5.4.1
@@ -40477,7 +40460,7 @@ https://github.com/mholt/PapaParse
 License: MIT
 */
 !function(e,t){"function"==typeof define&&define.amd?define([],t):"object"==typeof module&&"undefined"!=typeof exports?module.exports=t():e.Papa=t()}(this,function s(){"use strict";var f="undefined"!=typeof self?self:"undefined"!=typeof window?window:void 0!==f?f:{};var n=!f.document&&!!f.postMessage,o=f.IS_PAPA_WORKER||!1,a={},u=0,b={parse:function(e,t){var r=(t=t||{}).dynamicTyping||!1;J(r)&&(t.dynamicTypingFunction=r,r={});if(t.dynamicTyping=r,t.transform=!!J(t.transform)&&t.transform,t.worker&&b.WORKERS_SUPPORTED){var i=function(){if(!b.WORKERS_SUPPORTED)return!1;var e=(r=f.URL||f.webkitURL||null,i=s.toString(),b.BLOB_URL||(b.BLOB_URL=r.createObjectURL(new Blob(["var global = (function() { if (typeof self !== 'undefined') { return self; } if (typeof window !== 'undefined') { return window; } if (typeof global !== 'undefined') { return global; } return {}; })(); global.IS_PAPA_WORKER=true; ","(",i,")();"],{type:"text/javascript"})))),t=new f.Worker(e);var r,i;return t.onmessage=_,t.id=u++,a[t.id]=t}();return i.userStep=t.step,i.userChunk=t.chunk,i.userComplete=t.complete,i.userError=t.error,t.step=J(t.step),t.chunk=J(t.chunk),t.complete=J(t.complete),t.error=J(t.error),delete t.worker,void i.postMessage({input:e,config:t,workerId:i.id})}var n=null;b.NODE_STREAM_INPUT,"string"==typeof e?(e=function(e){if(65279===e.charCodeAt(0))return e.slice(1);return e}(e),n=t.download?new l(t):new p(t)):!0===e.readable&&J(e.read)&&J(e.on)?n=new g(t):(f.File&&e instanceof File||e instanceof Object)&&(n=new c(t));return n.stream(e)},unparse:function(e,t){var n=!1,_=!0,m=",",y="\r\n",s='"',a=s+s,r=!1,i=null,o=!1;!function(){if("object"!=typeof t)return;"string"!=typeof t.delimiter||b.BAD_DELIMITERS.filter(function(e){return-1!==t.delimiter.indexOf(e)}).length||(m=t.delimiter);("boolean"==typeof t.quotes||"function"==typeof t.quotes||Array.isArray(t.quotes))&&(n=t.quotes);"boolean"!=typeof t.skipEmptyLines&&"string"!=typeof t.skipEmptyLines||(r=t.skipEmptyLines);"string"==typeof t.newline&&(y=t.newline);"string"==typeof t.quoteChar&&(s=t.quoteChar);"boolean"==typeof t.header&&(_=t.header);if(Array.isArray(t.columns)){if(0===t.columns.length)throw new Error("Option columns is empty");i=t.columns}void 0!==t.escapeChar&&(a=t.escapeChar+s);("boolean"==typeof t.escapeFormulae||t.escapeFormulae instanceof RegExp)&&(o=t.escapeFormulae instanceof RegExp?t.escapeFormulae:/^[=+\-@\t\r].*$/)}();var u=new RegExp(Q(s),"g");"string"==typeof e&&(e=JSON.parse(e));if(Array.isArray(e)){if(!e.length||Array.isArray(e[0]))return h(null,e,r);if("object"==typeof e[0])return h(i||Object.keys(e[0]),e,r)}else if("object"==typeof e)return"string"==typeof e.data&&(e.data=JSON.parse(e.data)),Array.isArray(e.data)&&(e.fields||(e.fields=e.meta&&e.meta.fields||i),e.fields||(e.fields=Array.isArray(e.data[0])?e.fields:"object"==typeof e.data[0]?Object.keys(e.data[0]):[]),Array.isArray(e.data[0])||"object"==typeof e.data[0]||(e.data=[e.data])),h(e.fields||[],e.data||[],r);throw new Error("Unable to serialize unrecognized input");function h(e,t,r){var i="";"string"==typeof e&&(e=JSON.parse(e)),"string"==typeof t&&(t=JSON.parse(t));var n=Array.isArray(e)&&0<e.length,s=!Array.isArray(t[0]);if(n&&_){for(var a=0;a<e.length;a++)0<a&&(i+=m),i+=v(e[a],a);0<t.length&&(i+=y)}for(var o=0;o<t.length;o++){var u=n?e.length:t[o].length,h=!1,f=n?0===Object.keys(t[o]).length:0===t[o].length;if(r&&!n&&(h="greedy"===r?""===t[o].join("").trim():1===t[o].length&&0===t[o][0].length),"greedy"===r&&n){for(var d=[],l=0;l<u;l++){var c=s?e[l]:l;d.push(t[o][c])}h=""===d.join("").trim()}if(!h){for(var p=0;p<u;p++){0<p&&!f&&(i+=m);var g=n&&s?e[p]:p;i+=v(t[o][g],p)}o<t.length-1&&(!r||0<u&&!f)&&(i+=y)}}return i}function v(e,t){if(null==e)return"";if(e.constructor===Date)return JSON.stringify(e).slice(1,25);var r=!1;o&&"string"==typeof e&&o.test(e)&&(e="'"+e,r=!0);var i=e.toString().replace(u,a);return(r=r||!0===n||"function"==typeof n&&n(e,t)||Array.isArray(n)&&n[t]||function(e,t){for(var r=0;r<t.length;r++)if(-1<e.indexOf(t[r]))return!0;return!1}(i,b.BAD_DELIMITERS)||-1<i.indexOf(m)||" "===i.charAt(0)||" "===i.charAt(i.length-1))?s+i+s:i}}};if(b.RECORD_SEP=String.fromCharCode(30),b.UNIT_SEP=String.fromCharCode(31),b.BYTE_ORDER_MARK="\ufeff",b.BAD_DELIMITERS=["\r","\n",'"',b.BYTE_ORDER_MARK],b.WORKERS_SUPPORTED=!n&&!!f.Worker,b.NODE_STREAM_INPUT=1,b.LocalChunkSize=10485760,b.RemoteChunkSize=5242880,b.DefaultDelimiter=",",b.Parser=E,b.ParserHandle=r,b.NetworkStreamer=l,b.FileStreamer=c,b.StringStreamer=p,b.ReadableStreamStreamer=g,f.jQuery){var d=f.jQuery;d.fn.parse=function(o){var r=o.config||{},u=[];return this.each(function(e){if(!("INPUT"===d(this).prop("tagName").toUpperCase()&&"file"===d(this).attr("type").toLowerCase()&&f.FileReader)||!this.files||0===this.files.length)return!0;for(var t=0;t<this.files.length;t++)u.push({file:this.files[t],inputElem:this,instanceConfig:d.extend({},r)})}),e(),this;function e(){if(0!==u.length){var e,t,r,i,n=u[0];if(J(o.before)){var s=o.before(n.file,n.inputElem);if("object"==typeof s){if("abort"===s.action)return e="AbortError",t=n.file,r=n.inputElem,i=s.reason,void(J(o.error)&&o.error({name:e},t,r,i));if("skip"===s.action)return void h();"object"==typeof s.config&&(n.instanceConfig=d.extend(n.instanceConfig,s.config))}else if("skip"===s)return void h()}var a=n.instanceConfig.complete;n.instanceConfig.complete=function(e){J(a)&&a(e,n.file,n.inputElem),h()},b.parse(n.file,n.instanceConfig)}else J(o.complete)&&o.complete()}function h(){u.splice(0,1),e()}}}function h(e){this._handle=null,this._finished=!1,this._completed=!1,this._halted=!1,this._input=null,this._baseIndex=0,this._partialLine="",this._rowCount=0,this._start=0,this._nextChunk=null,this.isFirstChunk=!0,this._completeResults={data:[],errors:[],meta:{}},function(e){var t=w(e);t.chunkSize=parseInt(t.chunkSize),e.step||e.chunk||(t.chunkSize=null);this._handle=new r(t),(this._handle.streamer=this)._config=t}.call(this,e),this.parseChunk=function(e,t){if(this.isFirstChunk&&J(this._config.beforeFirstChunk)){var r=this._config.beforeFirstChunk(e);void 0!==r&&(e=r)}this.isFirstChunk=!1,this._halted=!1;var i=this._partialLine+e;this._partialLine="";var n=this._handle.parse(i,this._baseIndex,!this._finished);if(!this._handle.paused()&&!this._handle.aborted()){var s=n.meta.cursor;this._finished||(this._partialLine=i.substring(s-this._baseIndex),this._baseIndex=s),n&&n.data&&(this._rowCount+=n.data.length);var a=this._finished||this._config.preview&&this._rowCount>=this._config.preview;if(o)f.postMessage({results:n,workerId:b.WORKER_ID,finished:a});else if(J(this._config.chunk)&&!t){if(this._config.chunk(n,this._handle),this._handle.paused()||this._handle.aborted())return void(this._halted=!0);n=void 0,this._completeResults=void 0}return this._config.step||this._config.chunk||(this._completeResults.data=this._completeResults.data.concat(n.data),this._completeResults.errors=this._completeResults.errors.concat(n.errors),this._completeResults.meta=n.meta),this._completed||!a||!J(this._config.complete)||n&&n.meta.aborted||(this._config.complete(this._completeResults,this._input),this._completed=!0),a||n&&n.meta.paused||this._nextChunk(),n}this._halted=!0},this._sendError=function(e){J(this._config.error)?this._config.error(e):o&&this._config.error&&f.postMessage({workerId:b.WORKER_ID,error:e,finished:!1})}}function l(e){var i;(e=e||{}).chunkSize||(e.chunkSize=b.RemoteChunkSize),h.call(this,e),this._nextChunk=n?function(){this._readChunk(),this._chunkLoaded()}:function(){this._readChunk()},this.stream=function(e){this._input=e,this._nextChunk()},this._readChunk=function(){if(this._finished)this._chunkLoaded();else{if(i=new XMLHttpRequest,this._config.withCredentials&&(i.withCredentials=this._config.withCredentials),n||(i.onload=v(this._chunkLoaded,this),i.onerror=v(this._chunkError,this)),i.open(this._config.downloadRequestBody?"POST":"GET",this._input,!n),this._config.downloadRequestHeaders){var e=this._config.downloadRequestHeaders;for(var t in e)i.setRequestHeader(t,e[t])}if(this._config.chunkSize){var r=this._start+this._config.chunkSize-1;i.setRequestHeader("Range","bytes="+this._start+"-"+r)}try{i.send(this._config.downloadRequestBody)}catch(e){this._chunkError(e.message)}n&&0===i.status&&this._chunkError()}},this._chunkLoaded=function(){4===i.readyState&&(i.status<200||400<=i.status?this._chunkError():(this._start+=this._config.chunkSize?this._config.chunkSize:i.responseText.length,this._finished=!this._config.chunkSize||this._start>=function(e){var t=e.getResponseHeader("Content-Range");if(null===t)return-1;return parseInt(t.substring(t.lastIndexOf("/")+1))}(i),this.parseChunk(i.responseText)))},this._chunkError=function(e){var t=i.statusText||e;this._sendError(new Error(t))}}function c(e){var i,n;(e=e||{}).chunkSize||(e.chunkSize=b.LocalChunkSize),h.call(this,e);var s="undefined"!=typeof FileReader;this.stream=function(e){this._input=e,n=e.slice||e.webkitSlice||e.mozSlice,s?((i=new FileReader).onload=v(this._chunkLoaded,this),i.onerror=v(this._chunkError,this)):i=new FileReaderSync,this._nextChunk()},this._nextChunk=function(){this._finished||this._config.preview&&!(this._rowCount<this._config.preview)||this._readChunk()},this._readChunk=function(){var e=this._input;if(this._config.chunkSize){var t=Math.min(this._start+this._config.chunkSize,this._input.size);e=n.call(e,this._start,t)}var r=i.readAsText(e,this._config.encoding);s||this._chunkLoaded({target:{result:r}})},this._chunkLoaded=function(e){this._start+=this._config.chunkSize,this._finished=!this._config.chunkSize||this._start>=this._input.size,this.parseChunk(e.target.result)},this._chunkError=function(){this._sendError(i.error)}}function p(e){var r;h.call(this,e=e||{}),this.stream=function(e){return r=e,this._nextChunk()},this._nextChunk=function(){if(!this._finished){var e,t=this._config.chunkSize;return t?(e=r.substring(0,t),r=r.substring(t)):(e=r,r=""),this._finished=!r,this.parseChunk(e)}}}function g(e){h.call(this,e=e||{});var t=[],r=!0,i=!1;this.pause=function(){h.prototype.pause.apply(this,arguments),this._input.pause()},this.resume=function(){h.prototype.resume.apply(this,arguments),this._input.resume()},this.stream=function(e){this._input=e,this._input.on("data",this._streamData),this._input.on("end",this._streamEnd),this._input.on("error",this._streamError)},this._checkIsFinished=function(){i&&1===t.length&&(this._finished=!0)},this._nextChunk=function(){this._checkIsFinished(),t.length?this.parseChunk(t.shift()):r=!0},this._streamData=v(function(e){try{t.push("string"==typeof e?e:e.toString(this._config.encoding)),r&&(r=!1,this._checkIsFinished(),this.parseChunk(t.shift()))}catch(e){this._streamError(e)}},this),this._streamError=v(function(e){this._streamCleanUp(),this._sendError(e)},this),this._streamEnd=v(function(){this._streamCleanUp(),i=!0,this._streamData("")},this),this._streamCleanUp=v(function(){this._input.removeListener("data",this._streamData),this._input.removeListener("end",this._streamEnd),this._input.removeListener("error",this._streamError)},this)}function r(m){var a,o,u,i=Math.pow(2,53),n=-i,s=/^\s*-?(\d+\.?|\.\d+|\d+\.\d+)([eE][-+]?\d+)?\s*$/,h=/^((\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z)))$/,t=this,r=0,f=0,d=!1,e=!1,l=[],c={data:[],errors:[],meta:{}};if(J(m.step)){var p=m.step;m.step=function(e){if(c=e,_())g();else{if(g(),0===c.data.length)return;r+=e.data.length,m.preview&&r>m.preview?o.abort():(c.data=c.data[0],p(c,t))}}}function y(e){return"greedy"===m.skipEmptyLines?""===e.join("").trim():1===e.length&&0===e[0].length}function g(){return c&&u&&(k("Delimiter","UndetectableDelimiter","Unable to auto-detect delimiting character; defaulted to '"+b.DefaultDelimiter+"'"),u=!1),m.skipEmptyLines&&(c.data=c.data.filter(function(e){return!y(e)})),_()&&function(){if(!c)return;function e(e,t){J(m.transformHeader)&&(e=m.transformHeader(e,t)),l.push(e)}if(Array.isArray(c.data[0])){for(var t=0;_()&&t<c.data.length;t++)c.data[t].forEach(e);c.data.splice(0,1)}else c.data.forEach(e)}(),function(){if(!c||!m.header&&!m.dynamicTyping&&!m.transform)return c;function e(e,t){var r,i=m.header?{}:[];for(r=0;r<e.length;r++){var n=r,s=e[r];m.header&&(n=r>=l.length?"__parsed_extra":l[r]),m.transform&&(s=m.transform(s,n)),s=v(n,s),"__parsed_extra"===n?(i[n]=i[n]||[],i[n].push(s)):i[n]=s}return m.header&&(r>l.length?k("FieldMismatch","TooManyFields","Too many fields: expected "+l.length+" fields but parsed "+r,f+t):r<l.length&&k("FieldMismatch","TooFewFields","Too few fields: expected "+l.length+" fields but parsed "+r,f+t)),i}var t=1;!c.data.length||Array.isArray(c.data[0])?(c.data=c.data.map(e),t=c.data.length):c.data=e(c.data,0);m.header&&c.meta&&(c.meta.fields=l);return f+=t,c}()}function _(){return m.header&&0===l.length}function v(e,t){return r=e,m.dynamicTypingFunction&&void 0===m.dynamicTyping[r]&&(m.dynamicTyping[r]=m.dynamicTypingFunction(r)),!0===(m.dynamicTyping[r]||m.dynamicTyping)?"true"===t||"TRUE"===t||"false"!==t&&"FALSE"!==t&&(function(e){if(s.test(e)){var t=parseFloat(e);if(n<t&&t<i)return!0}return!1}(t)?parseFloat(t):h.test(t)?new Date(t):""===t?null:t):t;var r}function k(e,t,r,i){var n={type:e,code:t,message:r};void 0!==i&&(n.row=i),c.errors.push(n)}this.parse=function(e,t,r){var i=m.quoteChar||'"';if(m.newline||(m.newline=function(e,t){e=e.substring(0,1048576);var r=new RegExp(Q(t)+"([^]*?)"+Q(t),"gm"),i=(e=e.replace(r,"")).split("\r"),n=e.split("\n"),s=1<n.length&&n[0].length<i[0].length;if(1===i.length||s)return"\n";for(var a=0,o=0;o<i.length;o++)"\n"===i[o][0]&&a++;return a>=i.length/2?"\r\n":"\r"}(e,i)),u=!1,m.delimiter)J(m.delimiter)&&(m.delimiter=m.delimiter(e),c.meta.delimiter=m.delimiter);else{var n=function(e,t,r,i,n){var s,a,o,u;n=n||[",","\t","|",";",b.RECORD_SEP,b.UNIT_SEP];for(var h=0;h<n.length;h++){var f=n[h],d=0,l=0,c=0;o=void 0;for(var p=new E({comments:i,delimiter:f,newline:t,preview:10}).parse(e),g=0;g<p.data.length;g++)if(r&&y(p.data[g]))c++;else{var _=p.data[g].length;l+=_,void 0!==o?0<_&&(d+=Math.abs(_-o),o=_):o=_}0<p.data.length&&(l/=p.data.length-c),(void 0===a||d<=a)&&(void 0===u||u<l)&&1.99<l&&(a=d,s=f,u=l)}return{successful:!!(m.delimiter=s),bestDelimiter:s}}(e,m.newline,m.skipEmptyLines,m.comments,m.delimitersToGuess);n.successful?m.delimiter=n.bestDelimiter:(u=!0,m.delimiter=b.DefaultDelimiter),c.meta.delimiter=m.delimiter}var s=w(m);return m.preview&&m.header&&s.preview++,a=e,o=new E(s),c=o.parse(a,t,r),g(),d?{meta:{paused:!0}}:c||{meta:{paused:!1}}},this.paused=function(){return d},this.pause=function(){d=!0,o.abort(),a=J(m.chunk)?"":a.substring(o.getCharIndex())},this.resume=function(){t.streamer._halted?(d=!1,t.streamer.parseChunk(a,!0)):setTimeout(t.resume,3)},this.aborted=function(){return e},this.abort=function(){e=!0,o.abort(),c.meta.aborted=!0,J(m.complete)&&m.complete(c),a=""}}function Q(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(j){var z,M=(j=j||{}).delimiter,P=j.newline,U=j.comments,q=j.step,N=j.preview,B=j.fastMode,K=z=void 0===j.quoteChar||null===j.quoteChar?'"':j.quoteChar;if(void 0!==j.escapeChar&&(K=j.escapeChar),("string"!=typeof M||-1<b.BAD_DELIMITERS.indexOf(M))&&(M=","),U===M)throw new Error("Comment character same as delimiter");!0===U?U="#":("string"!=typeof U||-1<b.BAD_DELIMITERS.indexOf(U))&&(U=!1),"\n"!==P&&"\r"!==P&&"\r\n"!==P&&(P="\n");var W=0,H=!1;this.parse=function(i,t,r){if("string"!=typeof i)throw new Error("Input must be a string");var n=i.length,e=M.length,s=P.length,a=U.length,o=J(q),u=[],h=[],f=[],d=W=0;if(!i)return L();if(j.header&&!t){var l=i.split(P)[0].split(M),c=[],p={},g=!1;for(var _ in l){var m=l[_];J(j.transformHeader)&&(m=j.transformHeader(m,_));var y=m,v=p[m]||0;for(0<v&&(g=!0,y=m+"_"+v),p[m]=v+1;c.includes(y);)y=y+"_"+v;c.push(y)}if(g){var k=i.split(P);k[0]=c.join(M),i=k.join(P)}}if(B||!1!==B&&-1===i.indexOf(z)){for(var b=i.split(P),E=0;E<b.length;E++){if(f=b[E],W+=f.length,E!==b.length-1)W+=P.length;else if(r)return L();if(!U||f.substring(0,a)!==U){if(o){if(u=[],I(f.split(M)),F(),H)return L()}else I(f.split(M));if(N&&N<=E)return u=u.slice(0,N),L(!0)}}return L()}for(var w=i.indexOf(M,W),R=i.indexOf(P,W),C=new RegExp(Q(K)+Q(z),"g"),S=i.indexOf(z,W);;)if(i[W]!==z)if(U&&0===f.length&&i.substring(W,W+a)===U){if(-1===R)return L();W=R+s,R=i.indexOf(P,W),w=i.indexOf(M,W)}else if(-1!==w&&(w<R||-1===R))f.push(i.substring(W,w)),W=w+e,w=i.indexOf(M,W);else{if(-1===R)break;if(f.push(i.substring(W,R)),D(R+s),o&&(F(),H))return L();if(N&&u.length>=N)return L(!0)}else for(S=W,W++;;){if(-1===(S=i.indexOf(z,S+1)))return r||h.push({type:"Quotes",code:"MissingQuotes",message:"Quoted field unterminated",row:u.length,index:W}),T();if(S===n-1)return T(i.substring(W,S).replace(C,z));if(z!==K||i[S+1]!==K){if(z===K||0===S||i[S-1]!==K){-1!==w&&w<S+1&&(w=i.indexOf(M,S+1)),-1!==R&&R<S+1&&(R=i.indexOf(P,S+1));var O=A(-1===R?w:Math.min(w,R));if(i.substr(S+1+O,e)===M){f.push(i.substring(W,S).replace(C,z)),i[W=S+1+O+e]!==z&&(S=i.indexOf(z,W)),w=i.indexOf(M,W),R=i.indexOf(P,W);break}var x=A(R);if(i.substring(S+1+x,S+1+x+s)===P){if(f.push(i.substring(W,S).replace(C,z)),D(S+1+x+s),w=i.indexOf(M,W),S=i.indexOf(z,W),o&&(F(),H))return L();if(N&&u.length>=N)return L(!0);break}h.push({type:"Quotes",code:"InvalidQuotes",message:"Trailing quote on quoted field is malformed",row:u.length,index:W}),S++}}else S++}return T();function I(e){u.push(e),d=W}function A(e){var t=0;if(-1!==e){var r=i.substring(S+1,e);r&&""===r.trim()&&(t=r.length)}return t}function T(e){return r||(void 0===e&&(e=i.substring(W)),f.push(e),W=n,I(f),o&&F()),L()}function D(e){W=e,I(f),f=[],R=i.indexOf(P,W)}function L(e){return{data:u,errors:h,meta:{delimiter:M,linebreak:P,aborted:H,truncated:!!e,cursor:d+(t||0)}}}function F(){q(L()),u=[],h=[]}},this.abort=function(){H=!0},this.getCharIndex=function(){return W}}function _(e){var t=e.data,r=a[t.workerId],i=!1;if(t.error)r.userError(t.error,t.file);else if(t.results&&t.results.data){var n={abort:function(){i=!0,m(t.workerId,{data:[],errors:[],meta:{aborted:!0}})},pause:y,resume:y};if(J(r.userStep)){for(var s=0;s<t.results.data.length&&(r.userStep({data:t.results.data[s],errors:t.results.errors,meta:t.results.meta},n),!i);s++);delete t.results}else J(r.userChunk)&&(r.userChunk(t.results,n,t.file),delete t.results)}t.finished&&!i&&m(t.workerId,t.results)}function m(e,t){var r=a[e];J(r.userComplete)&&r.userComplete(t),r.terminate(),delete a[e]}function y(){throw new Error("Not implemented.")}function w(e){if("object"!=typeof e||null===e)return e;var t=Array.isArray(e)?[]:{};for(var r in e)t[r]=w(e[r]);return t}function v(e,t){return function(){e.apply(t,arguments)}}function J(e){return"function"==typeof e}return o&&(f.onmessage=function(e){var t=e.data;void 0===b.WORKER_ID&&t&&(b.WORKER_ID=t.workerId);if("string"==typeof t.input)f.postMessage({workerId:b.WORKER_ID,results:b.parse(t.input,t.config),finished:!0});else if(f.File&&t.input instanceof File||t.input instanceof Object){var r=b.parse(t.input,t.config);r&&f.postMessage({workerId:b.WORKER_ID,results:r,finished:!0})}}),(l.prototype=Object.create(h.prototype)).constructor=l,(c.prototype=Object.create(h.prototype)).constructor=c,(p.prototype=Object.create(p.prototype)).constructor=p,(g.prototype=Object.create(h.prototype)).constructor=g,b});
-},{}],36:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -40663,7 +40646,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],37:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -40727,7 +40710,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":4}],38:[function(require,module,exports){
+},{"buffer":4}],37:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-disable node/no-deprecated-api */
 
@@ -40808,7 +40791,7 @@ if (!safer.constants) {
 module.exports = safer
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":36,"buffer":4}],39:[function(require,module,exports){
+},{"_process":35,"buffer":4}],38:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -41105,4 +41088,4 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":37}]},{},[1]);
+},{"safe-buffer":36}]},{},[1]);

@@ -43,7 +43,7 @@
     "uglifycss": "^0.0.29"
   },
   "dependencies": {
-    "il-bank-account-validator": "^2.0.0",
+    "il-bank-account-validator": "github:vasilevich/il-bank-account-validator",
     "israeli-bank-autocomplete": "^1.1.7",
     "israeli-bank-validation": "^1.0.5",
     "israeli-id-validator": "^1.0.1"

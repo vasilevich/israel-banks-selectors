@@ -1,4 +1,5 @@
 .bank-filling-details-container {
+  direction: rtl;
   display: none;
 }
 
@@ -18,6 +19,7 @@
 
 
 .bank-filling-details .select2-container > .selection > .select2-selection {
+  direction: rtl;
   border: 0;
 }
 
@@ -33,6 +35,7 @@
 
 
 .bank-filling-details {
+  direction: rtl;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;

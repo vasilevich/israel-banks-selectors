@@ -2,7 +2,8 @@
   try {
     const realBankSection = jQuery("input#bankName").closest(".bid_section.details");
     const isIsraeliIdValid = require("israeli-id-validator");
-    const {validateBankAccount, RESULT} = require("israeli-bank-validation");
+    const validator = require('il-bank-account-validator');
+
     const {
       getAllBanks,
       getAllBranches,
@@ -18,8 +19,8 @@
       window.bankData.bankNumber = bank;
       window.bankData.departmentNumber = branch;
       window.bankData.accountNumber = account;
-      const bankValidationResults = validateBankAccount(`${bank}`, `${branch}`, `${account}`);
-      if (account > 9999 && bankValidationResults === RESULT.VALID) {
+      const bankValidationResults = validator(bank, branch, account);
+      if (account > 9999 && (bankValidationResults || !validator.SUPPORTED_BANKS.includes(bank))) {
         jQuery("#dynamic_accountNumber").removeClass("is-invalid");
         jQuery("#dynamic_accountNumber").addClass("is-valid");
         const bankObj = getAllBanks().find(bankObj => parseInt(bankObj.bankCode, 10) === bank);
@@ -94,14 +95,14 @@
 // Initialize Select2 for bank and department numbers
     jQuery(document).ready(function () {
       jQuery("#dynamic_bankNumber").select2({
-        placeholder: "בחר בנק",
+        placeholder: '',
         allowClear: true,
-        data: allBanks.map(bank => ({id: bank.bankCode, text: `${bank.bankCode} - ${bank.bankName}`}))
+        data: allBanks.map(bank => ({id: bank.bankCode, text: `${bank.bankCode} - ${bank.bankName}`})),
       });
 
       jQuery("#dynamic_departmentNumber").select2({
-        placeholder: "בחר סניף",
-        allowClear: true
+        placeholder: '',
+        allowClear: true,
       });
 
       // Update the department list when a bank is selected
@@ -119,7 +120,7 @@
             jQuery("#dynamic_departmentNumber")
               .empty()
               .select2({
-                placeholder: "Select a department",
+                placeholder: '',
                 allowClear: true,
                 data: departmentOptions
               })
