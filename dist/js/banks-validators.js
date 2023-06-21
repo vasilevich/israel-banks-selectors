@@ -31,7 +31,7 @@
         }
         if (bankSnifObj) {
           realBankSection.find('input[name="bankBranchNumber"]').val(branch);
-          realBankSection.find('input[name="bankBranchName"]').val(bankSnifObj.branchName);
+          realBankSection.find('input[name="bankBranchName"]').val(bankSnifObj.branchName || bankObj.bankName);
         }
         realBankSection.find('input[name="bankAccountNumber"]').val(account);
         realBankSection.find('input[name="bankAccountName"]').val(accountOwnerName);
@@ -98,11 +98,15 @@
         placeholder: '',
         allowClear: true,
         data: allBanks.map(bank => ({id: bank.bankCode, text: `${bank.bankCode} - ${bank.bankName}`})),
+        dir: "rtl",
+        language: "he"
       });
 
       jQuery("#dynamic_departmentNumber").select2({
         placeholder: '',
         allowClear: true,
+        dir: "rtl",
+        language: "he"
       });
 
       // Update the department list when a bank is selected
@@ -122,7 +126,9 @@
               .select2({
                 placeholder: '',
                 allowClear: true,
-                data: departmentOptions
+                data: departmentOptions,
+                dir: "rtl",
+                language: "he"
               })
               .prop("disabled", false);
           } else {

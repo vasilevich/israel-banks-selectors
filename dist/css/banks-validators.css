@@ -43,6 +43,43 @@
   align-items: flex-start;
 }
 
+/* Chrome, Safari, Edge, Opera */
+.bank-filling-details-container input::-webkit-outer-spin-button,
+.bank-filling-details-container input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.bank-filling-details-container input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.bank-filling-details-container .select2-selection__rendered {
+  direction: rtl;
+  display: flex;
+  flex-direction: row-reverse;
+  float: right;
+}
+
+#select2-dynamic_bankNumber-results li {
+  direction: rtl;
+}
+
+
+/* Chrome, Safari, Edge, Opera */
+.bank-filling-details input::-webkit-outer-spin-button,
+.bank-filling-details input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.bank-filling-details input[type=number] {
+  -moz-appearance: textfield;
+}
+
+
 @media (max-width: 500px) {
   .bank-filling-details {
     flex-direction: column;
