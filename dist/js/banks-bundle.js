@@ -24,7 +24,7 @@
       window.bankData.departmentNumber = branch;
       window.bankData.accountNumber = account;
       const bankValidationResults = validator(bank, branch, account);
-      if (account > 9999 && (bankValidationResults || !validator.SUPPORTED_BANKS.includes(bank))) {
+      if (account > 9999 && (bankValidationResults || !Object.values(validator.SUPPORTED_BANKS).includes(bank))) {
         jQuery("#dynamic_accountNumber").removeClass("is-invalid");
         jQuery("#dynamic_accountNumber").addClass("is-valid");
         const bankObj = getAllBanks().find(bankObj => parseInt(bankObj.bankCode, 10) === bank);
@@ -89,7 +89,7 @@
 // Replace this with the actual data from the "israeli-bank-autocomplete" package
     const allBanks = getAllBanks();
 
-    const allDeparments = getAllBranches();
+    const allDepartments = getAllBranches();
     const fixSelects = () => {
       setTimeout(() => {
         jQuery(".form_field_group > span.select2-container").addClass("form_field");
@@ -119,11 +119,19 @@
           const bankCode = parseInt(jQuery(this).val(), 10);
           validateBankAccountInput();
           if (bankCode) {
-            const departments = allDeparments.filter(department => department.bankCode === bankCode);
-            const departmentOptions = departments.map(department => ({
-              id: department.branchCode,
-              text: `${department.branchCode} - ${department.branchName}`
-            }));
+            const departments = allDepartments
+              .filter(department => department.bankCode === bankCode)
+              .map(department => {
+                if (!department.branchName || department.branchName.trim().length === 0) {
+                  department.branchName =department.bankName;
+                }
+                return department;
+              });
+            const departmentOptions = departments
+              .map(department => ({
+                id: department.branchCode,
+                text: `${department.branchCode} - ${department.branchName}`
+              }));
 
             jQuery("#dynamic_departmentNumber")
               .empty()

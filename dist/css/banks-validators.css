@@ -7,9 +7,21 @@
   border-color: #dc3545 !important;
 }
 
+.bank-filling-details .is-valid {
+  border-color: #52ff5a;
+}
 
-.bank-filling-details .w-input:focus, .w-select:focus, .bank-filling-details .select2-container.select2-container--open {
+.bank-filling-details .w-input:focus,
+.w-select:focus,
+.bank-filling-details .select2-container.select2-container--open {
   border-color: #3898EC !important;
+  outline: 0;
+}
+
+.bank-filling-details .w-input.is-valid:focus,
+.w-select.is-valid:focus,
+.bank-filling-details .select2-container.is-valid.select2-container--open {
+  border-color: #64fda5 !important;
   outline: 0;
 }
 
