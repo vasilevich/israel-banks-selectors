@@ -12,7 +12,22 @@
       fetchNewDataFromIsraelBank,
     } = require("israeli-bank-autocomplete");
     const bankFillingDetailsForm = jQuery('.bank-filling-details');
-    const {banks, branches} = await fetchNewDataFromIsraelBank();
+    const fetchNewDataFromIsraelBankInfiniteRetry = async () => {
+      while (true) {
+        try {
+          const {banks, branches} = await fetchNewDataFromIsraelBank();  // replace with your fetching function
+
+          if (banks.length > 0 && branches.length > 0) {
+            return {banks, branches};
+          }
+        } catch (err) {
+          console.error(err);
+        }
+
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    };
+    const {banks, branches} = await fetchNewDataFromIsraelBankInfiniteRetry();
     const validateBankAccountInput = () => {
       const bank = parseInt(jQuery("#dynamic_bankNumber").val() || "0", 10);
       const branch = parseInt(jQuery("#dynamic_departmentNumber").val() || "0", 10);
