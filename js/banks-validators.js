@@ -1,15 +1,14 @@
-(() => {
+(async () => {
   try {
     const realBankSection = jQuery("input#bankName").closest(".bid_section.details");
     const isIsraeliIdValid = require("israeli-id-validator");
     const validator = require('il-bank-account-validator');
 
     const {
-      getAllBanks,
-      getAllBranches,
+      fetchNewDataFromIsraelBank,
     } = require("israeli-bank-autocomplete");
     const bankFillingDetailsForm = jQuery('.bank-filling-details');
-
+    const {banks, branches} = await fetchNewDataFromIsraelBank();
     const validateBankAccountInput = () => {
       const bank = parseInt(jQuery("#dynamic_bankNumber").val() || "0", 10);
       const branch = parseInt(jQuery("#dynamic_departmentNumber").val() || "0", 10);
@@ -20,11 +19,11 @@
       window.bankData.departmentNumber = branch;
       window.bankData.accountNumber = account;
       const bankValidationResults = validator(bank, branch, account);
-      if (account > 9999 && (bankValidationResults || !Object.values(validator.SUPPORTED_BANKS).includes(bank))) {
+      if (account > 99 && (bankValidationResults || !Object.values(validator.SUPPORTED_BANKS).includes(bank))) {
         jQuery("#dynamic_accountNumber").removeClass("is-invalid");
         jQuery("#dynamic_accountNumber").addClass("is-valid");
-        const bankObj = getAllBanks().find(bankObj => parseInt(bankObj.bankCode, 10) === bank);
-        const relevantBranches = getAllBranches().filter(branchObj => parseInt(branchObj.bankCode, 10) === bank);
+        const bankObj = banks.find(bankObj => parseInt(bankObj.bankCode, 10) === bank);
+        const relevantBranches = branches.filter(branchObj => parseInt(branchObj.bankCode, 10) === bank);
         const bankSnifObj = relevantBranches.find(branchObj => parseInt(branchObj.branchCode, 10) === branch);
         if (bankObj) {
           realBankSection.find('input[name="bankName"]').val(`${bankObj.bankCode} - ${bankObj.bankName}`);
@@ -83,9 +82,9 @@
     window.bankData = bankData;
 
 // Replace this with the actual data from the "israeli-bank-autocomplete" package
-    const allBanks = getAllBanks();
+    const allBanks = banks;
 
-    const allDepartments = getAllBranches();
+    const allDepartments = branches;
     const fixSelects = () => {
       setTimeout(() => {
         jQuery(".form_field_group > span.select2-container").addClass("form_field");
@@ -119,7 +118,7 @@
               .filter(department => department.bankCode === bankCode)
               .map(department => {
                 if (!department.branchName || department.branchName.trim().length === 0) {
-                  department.branchName =department.bankName;
+                  department.branchName = department.bankName;
                 }
                 return department;
               });

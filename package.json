@@ -1,5 +1,5 @@
 {
-  "name": " ",
+  "name": "tripguaranty-banks-selectors",
   "version": "0.0.1",
   "description": "",
   "keywords": "",
@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "il-bank-account-validator": "github:vasilevich/il-bank-account-validator",
-    "israeli-bank-autocomplete": "^1.1.7",
+    "israeli-bank-autocomplete": "https://github.com/vasilevich/israeli-bank-autocomplete.git",
     "israeli-id-validator": "^1.0.1"
   }
 }
