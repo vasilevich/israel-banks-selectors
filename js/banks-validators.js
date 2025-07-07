@@ -3,14 +3,16 @@
     const realBankSection = jQuery("input#bankName").closest(".bid_section.details");
     const isIsraeliIdValid = require("israeli-id-validator");
     const validator = require('il-bank-account-validator');
-
-    const {
-      fetchNewDataFromIsraelBank,
-    } = require("israeli-bank-autocomplete");
     const bankFillingDetailsForm = jQuery('.bank-filling-details');
+    const fetchNewDataFromIsraelBank = async () => {
+      const res = await fetch("https://assets.robot-systems.tripguaranty.co.il/get-banks-departments")
+      if (!res.ok) throw new Error('bad response')
+      return await res.json()
+    }
     const fetchNewDataFromIsraelBankInfiniteRetry = async () => {
       while (true) {
         try {
+
           const {banks, branches} = await fetchNewDataFromIsraelBank();  // replace with your fetching function
 
           if (banks.length > 0 && branches.length > 0) {
