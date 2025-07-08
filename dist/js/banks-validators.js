@@ -179,14 +179,14 @@
         .change();
 
       // Validate the account number as the user types
-      jQuery("#dynamic_accountNumber").on("input", () => {
-        validateBankAccountInput();
-      });
+      jQuery("#dynamic_accountNumber")
+        .change(validateBankAccountInput)
+        .on("input", validateBankAccountInput);
 
       // Validate the israeli id number
-      jQuery("#dynamic_israelIdNumber").on("input", () => {
-        validateIsraelIdInput();
-      });
+      jQuery("#dynamic_israelIdNumber")
+        .change(validateBankAccountInput)
+        .on("input", validateIsraelIdInput);
 
 
       jQuery("#dynamic_bankAccountName").on("input", () => {
