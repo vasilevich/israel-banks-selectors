@@ -113,7 +113,11 @@
       jQuery("#dynamic_bankNumber").select2({
         placeholder: '',
         allowClear: true,
-        data: allBanks.map(bank => ({id: bank.bankCode, text: `${bank.bankCode} - ${bank.bankName}`})),
+        data: allBanks.map(bank => ({
+          id: bank.bankCode,
+          text: `${bank.bankCode} - ${bank.bankName}`,
+          bank,
+        })),
         dir: "rtl",
         language: "he"
       });
@@ -142,7 +146,8 @@
             const departmentOptions = departments
               .map(department => ({
                 id: department.branchCode,
-                text: `${department.branchCode} - ${department.branchName}`
+                text: `${department.branchCode} - ${department.branchName}`,
+                department,
               }));
 
             jQuery("#dynamic_departmentNumber")
